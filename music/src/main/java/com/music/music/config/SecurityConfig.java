@@ -24,10 +24,12 @@ public class SecurityConfig {
         http
 			.authorizeHttpRequests((requests) -> requests
 				.requestMatchers("/").permitAll()
+				.requestMatchers("/boards/**").permitAll()
 				.anyRequest().authenticated()
 			)
 			.formLogin((form) -> Customizer.withDefaults()
 			)
+			.csrf(csrf -> csrf.disable())
 			.logout(LogoutConfigurer::permitAll);
 
         return http.build();

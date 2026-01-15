@@ -55,4 +55,9 @@ public class Board extends BaseTimeEntity{
 
     @Column(nullable = false)
     private int likeCount = 0;
+
+    public void update(String title, String content) {
+    this.title = title;
+    this.content = content;
+}
 }

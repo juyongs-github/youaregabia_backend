@@ -44,4 +44,8 @@ public class Reply extends BaseTimeEntity{
 
     @Column(nullable = false)
 private int likeCount = 0;
+
+public void updateContent(String content) {
+    this.content = content;
+}
 }

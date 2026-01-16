@@ -9,17 +9,22 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-
 @ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
-public class PublicPlaylistDTO {
+
+// 노출용
+public class OutPlaylistDTO {
+
     private Long id;
 
     private String title;
+    // private String imageUrl;
+
     private List<MusicDTO> musics;
+
 
 }

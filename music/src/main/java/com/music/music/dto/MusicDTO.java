@@ -15,14 +15,12 @@ import lombok.ToString;
 @Setter
 public class MusicDTO {
 
-    
     private Long id;
 
-    private String title;
-    private String artist;
+    private String name;
+    private String artist_id;
     
-    private String ImageUrl;
+    private String imageUrl;
 
-    private Integer durationMs;
 
 }

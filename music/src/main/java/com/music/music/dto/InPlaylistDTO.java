@@ -1,5 +1,7 @@
 package com.music.music.dto;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,10 +15,14 @@ import lombok.ToString;
 @NoArgsConstructor
 @Getter
 @Setter
-public class PrivatePlaylistDTO {
+
+// 입력용
+public class InPlaylistDTO {
     private Long id;
 
     private String title;
-    private String ImageUrl;
+    // private String imageUrl;
+
+    private List<MusicDTO> musics;
 
 }

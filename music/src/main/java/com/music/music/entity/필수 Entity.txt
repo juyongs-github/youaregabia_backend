@@ -1,44 +1,11 @@
-Artist 
-    - 아티스트 정보
-        - mbid (MusicBrainz ID, unique)
-        - name
-        - canonicalName (검색/매칭)
-        - sortName
-ArtistAlias
-    - Last.fm / 다국어 / 오탈자 대응
-        - artist_id
-        - name
-        - canonicalName
-        - type (official / lastfm / search_hint)
-Recording
-        - mbid
-        - title
-        - canonicalTitle
-        - lengthMs
-        - isrc
-RecordingArtist 
-    - feat / multiple artist 처리 및 artist 순서 유지
-        - recording_id
-        - artist_id
-        - artistOrder
-Release 
-    - 앨범(보조 정보)
-        - mbid
-        - title
-        - releaseDate
-LastFmMapping
-    - MusicBrainz <-> Last.fm 연결 결과 저장
-        - entityType (artist / recording)
-        - entityId
-        - lastfmMbid
-        - lastfmUrl
-        - matchType (mbid / isrc / exact / fuzzy)
-        - matchScore
-LastFmStat
-    - 많이 듣는 곡 / 인기 아티스트 / 유사도
-        -entityType
-        - entityId
-        - playcount
-        - listeners
-        - tags (json)
-        - updatedAt
+track
+    - id
+    - name
+    - artist_id
+    - duration
+    - imageURL
+
+artist
+    - id
+    - name
+    - imageURL

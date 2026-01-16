@@ -24,6 +24,14 @@ public class BoardService {
     private final ReplyRepository replyRepository;
     private final UserRepository userRepository;
 
+    public List<BoardDto> getBoardList() {
+    List<Board> boards = boardRepository.findAll();
+    
+    return boards.stream()
+            .map(BoardDto::new)  // 댓글 없는 생성자 사용
+            .toList();
+}
+
     public BoardDto getBoardDetail(Long boardId) {
 
         Board board = boardRepository.findById(boardId)

@@ -34,4 +34,12 @@ public class BoardDto {
         this.createdAt = board.getCreatedAt();
         this.replies = replies;
     }
+    
+    public BoardDto(Board board) {
+    this.boardId = board.getBoardId();
+    this.title = board.getTitle();
+    this.writer = board.getUser().getNickname();
+    this.createdAt = board.getCreatedAt();
+}
+    
 }

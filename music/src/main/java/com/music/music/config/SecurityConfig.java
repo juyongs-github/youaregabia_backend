@@ -25,12 +25,12 @@ public class SecurityConfig {
 			.authorizeHttpRequests((requests) -> requests
 				.requestMatchers("/").permitAll()
 				.requestMatchers("/boards/**").permitAll()
+				.requestMatchers("/boards").permitAll()
 				.anyRequest().authenticated()
-			)
-			.formLogin((form) -> Customizer.withDefaults()
-			)
-			.csrf(csrf -> csrf.disable())
-			.logout(LogoutConfigurer::permitAll);
+			);
+			// .formLogin((form) -> Customizer.withDefaults()
+			// )
+			// .logout(LogoutConfigurer::permitAll);
 
         return http.build();
 	}
@@ -40,13 +40,13 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
-	@Bean // 로그인 유저 정보 초기 세팅
-	public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-		String password = encoder.encode("1234");
-		UserDetails user = User.withUsername("admin")
-            .password(password)
-            .roles("USER")
-            .build();
-		return new InMemoryUserDetailsManager(user);
-	}
+	// @Bean // 로그인 유저 정보 초기 세팅
+	// public UserDetailsService userDetailsService(PasswordEncoder encoder) {
+	// 	String password = encoder.encode("1234");
+	// 	UserDetails user = User.withUsername("admin")
+    //         .password(password)
+    //         .roles("USER")
+    //         .build();
+	// 	return new InMemoryUserDetailsManager(user);
+	// }
 }

@@ -3,8 +3,8 @@ package com.music.music.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.music.music.dto.InPlaylistDTO;
-import com.music.music.dto.OutPlaylistDTO;
+import com.music.music.dto.InputPlaylistDTO;
+import com.music.music.dto.OutputPlaylistDTO;
 import com.music.music.entity.Playlist;
 import com.music.music.repository.PlaylistRepository;
 

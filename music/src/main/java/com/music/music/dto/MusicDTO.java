@@ -13,7 +13,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @Getter
 @Setter
-public class SongDTO {
+public class MusicDTO {
 
     private Long id;
 

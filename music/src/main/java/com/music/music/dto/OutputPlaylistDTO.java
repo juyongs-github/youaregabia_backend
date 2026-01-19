@@ -24,7 +24,7 @@ public class OutputPlaylistDTO {
     private String title;
     // private String imageUrl;
 
-    private List<SongDTO> musics;
+    private List<MusicDTO> musics;
 
 
 }

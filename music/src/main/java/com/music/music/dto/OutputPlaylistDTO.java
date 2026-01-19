@@ -17,7 +17,7 @@ import lombok.ToString;
 @Setter
 
 // 노출용
-public class OutPlaylistDTO {
+public class OutputPlaylistDTO {
 
     private Long id;
 

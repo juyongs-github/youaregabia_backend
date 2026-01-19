@@ -17,7 +17,7 @@ import lombok.ToString;
 @Setter
 
 // 입력용
-public class InPlaylistDTO {
+public class InputPlaylistDTO {
     private Long id;
 
     private String title;

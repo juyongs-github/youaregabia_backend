@@ -19,7 +19,7 @@ public class PlaylistService {
     
     private final PlaylistRepository playlistRepository;
     // Create
-    public Long CreatePlaylist(InPlaylistDTO dto) {
+    public Long CreatePlaylist(InputPlaylistDTO dto) {
         Playlist playlist = Playlist.builder().title(dto.getTitle()).build();
 
         return playlistRepository.save(playlist).getId();

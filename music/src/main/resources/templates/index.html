@@ -1,11 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>테스트 메인</title>
   </head>
   <body>
-    <a th:href="@{/test}">Thymeleaf 테스트</a>
+    <a th:href="@{/api/init}">초기 Seed 곡 DB 저장</a>
+    <form method="get" action="/">
+      <input
+        type="text"
+        id="trackName"
+        name="trackName"
+        placeholder="곡 이름"
+      />
+      <input
+        type="text"
+        id="artistName"
+        name="artistName"
+        placeholder="아티스트 이름"
+      />
+      <button type="submit">추천 곡 리스트 가져오기</button>
+    </form>
+    <div th:if="${recommendSongList != null}">
+      <h3>추천 곡 리스트</h3>
+      <ul>
+        <li th:each="song : ${recommendSongList}">
+          <strong th:text="${song.trackName}"></strong>
+          -
+          <span th:text="${song.artistName}"></span>
+        </li>
+      </ul>
+    </div>
   </body>
 </html>

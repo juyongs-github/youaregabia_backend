@@ -10,6 +10,7 @@ import com.music.music.board.dto.ReplyResponseDto;
 import com.music.music.board.entity.Board;
 import com.music.music.board.entity.BoardType;
 import com.music.music.board.repository.BoardRepository;
+import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
 import com.music.music.board.repository.UserRepository;
 import com.music.music.user.User;
@@ -23,6 +24,9 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final ReplyRepository replyRepository;
     private final UserRepository userRepository;
+    private final ReplyLikeRepository replyLikeRepository;
+    private final ReplyService replyService;
+
 
     public List<BoardDto> getBoardList() {
     List<Board> boards = boardRepository.findAll();
@@ -32,16 +36,15 @@ public class BoardService {
             .toList();
 }
 
-    public BoardDto getBoardDetail(Long boardId) {
+    public BoardDto getBoardDetail(Long boardId, Long userId) {
 
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
         List<ReplyResponseDto> replies =
-                replyRepository.findByBoard_BoardIdOrderByCreatedAtDesc(boardId)
-                        .stream()
-                        .map(ReplyResponseDto::new)
-                        .toList();
+                replyRepository.findRepliesWithLikeInfo(boardId, userId);
+
+                
 
         return new BoardDto(board, replies);
     }

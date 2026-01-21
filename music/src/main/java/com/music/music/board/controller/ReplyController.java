@@ -40,7 +40,7 @@ public class ReplyController {
     }
 
     @PutMapping("/replies/{replyId}")
-public void updateReply(
+    public void updateReply(
         @PathVariable Long replyId,
         @RequestParam Long userId,
         @RequestBody ReplyCreateDto dto

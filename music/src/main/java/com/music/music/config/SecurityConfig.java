@@ -20,12 +20,13 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.csrf(AbstractHttpConfigurer::disable);
+		http.cors(Customizer.withDefaults())
+		.csrf(AbstractHttpConfigurer::disable);
         http
 			.authorizeHttpRequests((requests) -> requests
 				.requestMatchers("/").permitAll()
 				.requestMatchers("/boards/**").permitAll()
-				.requestMatchers("/boards").permitAll()
+				.requestMatchers("/**").permitAll()
 				.anyRequest().authenticated()
 			);
 			// .formLogin((form) -> Customizer.withDefaults()

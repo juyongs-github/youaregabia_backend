@@ -30,8 +30,8 @@ public class BoardController {
     
 
     @GetMapping("/{boardId}")
-    public BoardDto getBoardDetail(@PathVariable Long boardId) {
-        return boardService.getBoardDetail(boardId);
+    public BoardDto getBoardDetail(@PathVariable Long boardId,  @RequestParam Long userId) {
+        return boardService.getBoardDetail(boardId, userId);
     }
 
     @PostMapping

@@ -1,9 +1,13 @@
 package com.music.music.board.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import com.music.music.board.dto.ReplyCreateDto;
+import com.music.music.board.dto.ReplyResponseDto;
 import com.music.music.board.entity.Board;
 import com.music.music.board.entity.Reply;
 import com.music.music.board.repository.BoardRepository;
@@ -20,6 +24,12 @@ public class ReplyService {
     private final ReplyRepository replyRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+
+    
+    
+    public List<ReplyResponseDto> getReplies(Long boardId, Long userId) {
+    return replyRepository.findRepliesWithLikeInfo(boardId, userId);
+}
 
     public Long createReply(Long boardId, Long userId, ReplyCreateDto dto) {
 

@@ -23,15 +23,25 @@ public class ReplyResponseDto {
     private String content;
     private String writer;
     private int likeCount;
+    private boolean likedByMe;
     private LocalDateTime createdAt;
 
-    public ReplyResponseDto(Reply reply) {
-        this.replyId = reply.getReplyId();
-        this.content = reply.getContent();
-        this.writer = reply.getUser().getNickname();
-        this.likeCount = reply.getLikeCount();
-        this.createdAt = reply.getCreatedAt();
-    }
+    // ✅ JPQL 전용 생성자
+    public ReplyResponseDto(
+    Long replyId,
+    String content,
+    String writer,
+    Long likeCount,
+    Long likedByMe,
+    LocalDateTime createdAt
+) {
+    this.replyId = replyId;
+    this.content = content;
+    this.writer = writer;
+    this.likeCount = likeCount != null ? likeCount.intValue() : 0;
+    this.likedByMe = likedByMe != null && likedByMe > 0;
+    this.createdAt = createdAt;
+}
 
 
 }

@@ -5,8 +5,11 @@ import java.util.List;
 
 import com.music.music.entity.constant.PlaylistType;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,7 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Getter
-@ToString
+@ToString(exclude = "playlistSongs")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -32,6 +35,7 @@ public class Playlist extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PlaylistType type;
 
@@ -40,20 +44,22 @@ public class Playlist extends BaseEntity {
 
     private String description;
 
-    @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlaylistSong> playlistSongs = new ArrayList<>();
 
-    // 이미지 추가
     private String imageUrl;
+
     // 선택사항 (공동 플레이리스트 제작 시 필요)
     private String genre;
 
-    // 플레이리스트에서 노래를 검색해서 추가하는 메서드
+    // 곡 추가 메서드
     public void addSong(Song song) {
         PlaylistSong playlistSong = PlaylistSong.builder()
                 .playlist(this)
                 .song(song)
                 .build();
+
+        playlistSongs.add(playlistSong);
     }
 
     // 수정 메서드

@@ -52,7 +52,7 @@ public class BoardService {
 
 
     @Transactional
-public Long createBoard(Long userId, BoardDto dto) {
+    public Long createBoard(Long userId, BoardDto dto) {
 
     User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
@@ -67,8 +67,8 @@ public Long createBoard(Long userId, BoardDto dto) {
     return boardRepository.save(board).getBoardId();
 }
 
-@Transactional
-public void updateBoard(Long boardId, Long userId, BoardDto dto) {
+    @Transactional
+    public void updateBoard(Long boardId, Long userId, BoardDto dto) {
 
     Board board = boardRepository.findById(boardId)
             .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
@@ -80,8 +80,8 @@ public void updateBoard(Long boardId, Long userId, BoardDto dto) {
     board.update(dto.getTitle(), dto.getContent());
 }
 
-@Transactional
-public void deleteBoard(Long boardId, Long userId) {
+    @Transactional
+    public void deleteBoard(Long boardId, Long userId) {
 
     Board board = boardRepository.findById(boardId)
             .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));

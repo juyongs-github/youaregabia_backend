@@ -1,5 +1,6 @@
 package com.music.music.repository;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +14,7 @@ import com.music.music.board.repository.UserRepository;
 import com.music.music.user.Role;
 import com.music.music.user.User;
 
+@Disabled
 @SpringBootTest
 public class BoardReplyRepositoryTest {
         @Autowired

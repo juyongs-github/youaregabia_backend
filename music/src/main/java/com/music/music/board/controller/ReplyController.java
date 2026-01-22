@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/boards")
+@RequestMapping("/community/share")
 public class ReplyController {
     private final ReplyService replyService;
 
@@ -25,8 +25,7 @@ public class ReplyController {
     public Long createReply(
             @PathVariable Long boardId,
             @RequestParam Long userId,
-            @RequestBody ReplyCreateDto dto
-    ) {
+            @RequestBody ReplyCreateDto dto) {
         return replyService.createReply(boardId, userId, dto);
     }
 
@@ -34,8 +33,7 @@ public class ReplyController {
     @DeleteMapping("/replies/{replyId}")
     public void deleteReply(
             @PathVariable Long replyId,
-            @RequestParam Long userId
-    ) {
+            @RequestParam Long userId) {
         replyService.deleteReply(replyId, userId);
     }
 
@@ -43,9 +41,8 @@ public class ReplyController {
     public void updateReply(
         @PathVariable Long replyId,
         @RequestParam Long userId,
-        @RequestBody ReplyCreateDto dto
-) {
-    replyService.updateReply(replyId, userId, dto);
-}
+        @RequestBody ReplyCreateDto dto) {
+        replyService.updateReply(replyId, userId, dto);
+    }
 }
 

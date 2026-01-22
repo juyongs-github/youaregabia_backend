@@ -19,9 +19,11 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/boards")
+@RequestMapping("/community/share")
 public class BoardController {
     private final BoardService boardService;
+
+    
 
     @GetMapping
     public List<BoardDto> getBoardList() {
@@ -36,20 +38,20 @@ public class BoardController {
 
     @PostMapping
     public Long createBoard(@RequestParam Long userId,@RequestBody BoardDto dto) {
-    return boardService.createBoard(userId, dto);
+        return boardService.createBoard(userId, dto);
 }
 
-@PutMapping("/{boardId}")
-public void updateBoard(
+    @PutMapping("/{boardId}")
+    public void updateBoard(
         @PathVariable Long boardId,
         @RequestParam Long userId,
         @RequestBody BoardDto dto) {
-    boardService.updateBoard(boardId, userId, dto);
+        boardService.updateBoard(boardId, userId, dto);
 }
-@DeleteMapping("/{boardId}")
-public void deleteBoard(
+    @DeleteMapping("/{boardId}")
+    public void deleteBoard(
         @PathVariable Long boardId,
         @RequestParam Long userId) {
-    boardService.deleteBoard(boardId, userId);
+        boardService.deleteBoard(boardId, userId);
 }
 }

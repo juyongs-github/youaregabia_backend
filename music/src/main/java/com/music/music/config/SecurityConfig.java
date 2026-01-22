@@ -25,7 +25,7 @@ public class SecurityConfig {
         http
 			.authorizeHttpRequests((requests) -> requests
 				.requestMatchers("/").permitAll()
-				.requestMatchers("/boards/**").permitAll()
+				.requestMatchers("/community/share/**").permitAll()
 				.requestMatchers("/**").permitAll()
 				.anyRequest().authenticated()
 			);

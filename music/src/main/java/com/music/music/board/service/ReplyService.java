@@ -11,6 +11,7 @@ import com.music.music.board.dto.ReplyResponseDto;
 import com.music.music.board.entity.Board;
 import com.music.music.board.entity.Reply;
 import com.music.music.board.repository.BoardRepository;
+import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
 import com.music.music.board.repository.UserRepository;
 import com.music.music.user.User;
@@ -24,12 +25,16 @@ public class ReplyService {
     private final ReplyRepository replyRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+    private final ReplyLikeRepository replyLikeRepository;
 
     
     
     public List<ReplyResponseDto> getReplies(Long boardId, Long userId) {
     return replyRepository.findRepliesWithLikeInfo(boardId, userId);
-}
+    }
+
+
+    
 
     public Long createReply(Long boardId, Long userId, ReplyCreateDto dto) {
 

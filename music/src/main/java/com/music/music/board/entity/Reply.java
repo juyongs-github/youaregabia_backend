@@ -1,8 +1,12 @@
 package com.music.music.board.entity;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.music.music.common.BaseTimeEntity;
 import com.music.music.user.User;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -11,6 +15,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,7 +26,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @Builder
 @Getter
-@ToString
+@ToString(exclude = "replyLikes")
 @Entity
 public class Reply extends BaseTimeEntity{
     
@@ -43,9 +48,13 @@ public class Reply extends BaseTimeEntity{
     private String content;
 
     @Column(nullable = false)
-private int likeCount = 0;
+    private int likeCount = 0;
 
-public void updateContent(String content) {
+    @OneToMany(mappedBy = "reply", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @Builder.Default
+    private List<ReplyLike> replyLikes = new ArrayList<>();
+
+    public void updateContent(String content) {
     this.content = content;
 }
 }

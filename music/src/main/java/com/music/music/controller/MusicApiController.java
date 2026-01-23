@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.music.music.dto.SongDTO;
 import com.music.music.service.MusicApiService;
 
-
 @RestController
 public class MusicApiController {
     private Logger logger = LoggerFactory.getLogger(MusicApiController.class);
@@ -39,5 +38,11 @@ public class MusicApiController {
         @RequestParam String trackName, 
         @RequestParam String artistName) {
         return musicApiService.getRecommendSongList(trackName, artistName);
+    }
+
+    @GetMapping("/api/search")
+    public List<SongDTO> getSearchSongList(
+        @RequestParam("q") String query) {
+        return musicApiService.getSearchSongList(query);
     }
 }

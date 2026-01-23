@@ -1,5 +1,7 @@
 package com.music.music.config;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -23,8 +25,8 @@ public class SecurityConfig {
 		http.csrf(AbstractHttpConfigurer::disable);
         http
 			.authorizeHttpRequests((requests) -> requests
-				.requestMatchers("/").permitAll()
-				.anyRequest().authenticated()
+				// .requestMatchers("/").permitAll()
+				.anyRequest().permitAll()
 			)
 			.formLogin((form) -> Customizer.withDefaults()
 			)

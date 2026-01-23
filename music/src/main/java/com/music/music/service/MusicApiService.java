@@ -260,4 +260,24 @@ public class MusicApiService {
             return resultList;
         }
     }
+
+    // 유저 검색 곡 리스트 가져오기
+    public List<SongDTO> getSearchSongList(String query) {
+        List<SongDTO> resultList = new ArrayList<>();
+        ItunesSearchResponse itunesSearchResponse = getTrackInfo(query, "songTerm", 30);
+    
+        if(itunesSearchResponse != null) {
+            List<SongDTO> songList = itunesSearchResponse.getResults();
+            for(SongDTO songDto : songList) {
+                // DB에 추천 곡 정보 INSERT
+                Song song = modelMapper.map(songDto, Song.class);
+                songRepository.findById(songDto.getId())
+                    .orElseGet(() -> songRepository.save(song));
+
+                resultList.add(songDto);
+            }
+        }
+    
+        return resultList;
+    }
 }

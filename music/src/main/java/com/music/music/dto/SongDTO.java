@@ -2,8 +2,10 @@ package com.music.music.dto;
 
 import com.google.gson.annotations.SerializedName;
 
+import lombok.Builder;
 import lombok.Data;
 
+@Builder
 @Data
 public class SongDTO {
     @SerializedName("trackId")

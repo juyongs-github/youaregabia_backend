@@ -22,7 +22,8 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-		http.csrf(AbstractHttpConfigurer::disable);
+		http.cors(Customizer.withDefaults())
+		.csrf(AbstractHttpConfigurer::disable);
         http
 			.authorizeHttpRequests((requests) -> requests
 				// .requestMatchers("/").permitAll()
@@ -41,13 +42,13 @@ public class SecurityConfig {
 		return new BCryptPasswordEncoder();
 	}
 
-	@Bean // 로그인 유저 정보 초기 세팅
-	public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-		String password = encoder.encode("1234");
-		UserDetails user = User.withUsername("admin")
-            .password(password)
-            .roles("USER")
-            .build();
-		return new InMemoryUserDetailsManager(user);
-	}
+	// @Bean // 로그인 유저 정보 초기 세팅
+	// public UserDetailsService userDetailsService(PasswordEncoder encoder) {
+	// 	String password = encoder.encode("1234");
+	// 	UserDetails user = User.withUsername("admin")
+    //         .password(password)
+    //         .roles("USER")
+    //         .build();
+	// 	return new InMemoryUserDetailsManager(user);
+	// }
 }

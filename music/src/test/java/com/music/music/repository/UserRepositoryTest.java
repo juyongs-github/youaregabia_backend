@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.music.music.board.repository.UserRepository;
-import com.music.music.user.Role;
-import com.music.music.user.User;
+import com.music.music.user.entity.User;
+import com.music.music.user.entity.constant.Role;
 
 @Disabled
 @SpringBootTest

@@ -14,7 +14,7 @@ import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
 import com.music.music.board.repository.UserRepository;
-import com.music.music.user.User;
+import com.music.music.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
 

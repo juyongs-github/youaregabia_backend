@@ -1,6 +1,7 @@
-package com.music.music.user;
+package com.music.music.user.entity;
 
-import com.music.music.common.BaseTimeEntity;
+import com.music.music.common.entity.BaseEntity;
+import com.music.music.user.entity.constant.Role;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,7 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User extends BaseTimeEntity {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

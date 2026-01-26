@@ -18,7 +18,7 @@ import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
 import com.music.music.board.repository.UserRepository;
 import com.music.music.common.PageRequestDTO;
-import com.music.music.user.User;
+import com.music.music.user.entity.User;
 
 import lombok.AllArgsConstructor;
 
@@ -33,16 +33,16 @@ public class BoardService {
     private final ReplyService replyService;
 
 
-    public List<BoardDto> getBoardList(PageRequestDTO dto) {
-        Page<Board> result = null;
-        Pageable pageable = PageRequest.of(dto.getPage(), dto.getSize(), Sort.by("id").descending());
-        result = boardRepository.findAll(pageable);
+//     public List<BoardDto> getBoardList(PageRequestDTO dto) {
+//         Page<Board> result = null;
+//         Pageable pageable = PageRequest.of(dto.getPage(), dto.getSize(), Sort.by("id").descending());
+//         result = boardRepository.findAll(pageable);
 
     
-    List<BoardDto> dtoList = result.stream()
-            .map(BoardDto::new)  // 댓글 없는 생성자 사용
-            .toList();
-}
+//     List<BoardDto> dtoList = result.stream()
+//             .map(BoardDto::new)  // 댓글 없는 생성자 사용
+//             .toList();
+// }
 
     public BoardDto getBoardDetail(Long boardId, Long userId) {
 

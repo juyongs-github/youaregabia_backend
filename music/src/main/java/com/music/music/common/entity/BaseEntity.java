@@ -1,4 +1,4 @@
-package com.music.music.common;
+package com.music.music.common.entity;
 
 import java.time.LocalDateTime;
 
@@ -10,11 +10,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
+import lombok.Setter;
 
-@Getter
 @EntityListeners(value = AuditingEntityListener.class)
 @MappedSuperclass
-public abstract class BaseTimeEntity {
+@Setter
+@Getter
+public abstract class BaseEntity {
 
     @CreatedDate
     @Column(updatable = false)

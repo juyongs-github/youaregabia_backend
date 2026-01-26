@@ -1,5 +1,7 @@
 package com.music.music.config;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -24,14 +26,13 @@ public class SecurityConfig {
 		.csrf(AbstractHttpConfigurer::disable);
         http
 			.authorizeHttpRequests((requests) -> requests
-				.requestMatchers("/").permitAll()
-				.requestMatchers("/community/share/**").permitAll()
-				.requestMatchers("/**").permitAll()
-				.anyRequest().authenticated()
-			);
-			// .formLogin((form) -> Customizer.withDefaults()
-			// )
-			// .logout(LogoutConfigurer::permitAll);
+				// .requestMatchers("/").permitAll()
+				// .anyRequest().authenticated()
+				.anyRequest().permitAll()
+			)
+			.formLogin((form) -> Customizer.withDefaults()
+			)
+			.logout(LogoutConfigurer::permitAll);
 
         return http.build();
 	}

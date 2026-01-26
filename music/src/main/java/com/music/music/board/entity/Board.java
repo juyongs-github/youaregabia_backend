@@ -3,8 +3,8 @@ package com.music.music.board.entity;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.music.music.common.BaseTimeEntity;
-import com.music.music.user.User;
+import com.music.music.common.entity.BaseEntity;
+import com.music.music.user.entity.User;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -32,7 +32,7 @@ import lombok.ToString;
 @ToString(exclude = "replies")
 @Builder
 @Table(name = "board")
-public class Board extends BaseTimeEntity{
+public class Board extends BaseEntity{
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

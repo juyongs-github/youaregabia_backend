@@ -11,8 +11,8 @@ import com.music.music.board.entity.Reply;
 import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyRepository;
 import com.music.music.board.repository.UserRepository;
-import com.music.music.user.Role;
-import com.music.music.user.User;
+import com.music.music.user.entity.User;
+import com.music.music.user.entity.constant.Role;
 
 @Disabled
 @SpringBootTest

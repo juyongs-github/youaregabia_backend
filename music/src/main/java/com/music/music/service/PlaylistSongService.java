@@ -49,9 +49,9 @@ public class PlaylistSongService {
 
     // 곡 삭제
     public void removeSongFromPlaylist(Long playlistSongId) {
-        PlaylistSong ps = playlistSongRepository.findById(playlistSongId)
+        PlaylistSong playlistSong = playlistSongRepository.findById(playlistSongId)
                 .orElseThrow(() -> new IllegalArgumentException("플레이리스트 곡을 찾을 수 없습니다."));
-        playlistSongRepository.delete(ps);
+        playlistSongRepository.delete(playlistSong);
     }
 
     // 곡 조회

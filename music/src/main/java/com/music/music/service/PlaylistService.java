@@ -18,11 +18,7 @@ public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
 
-    /*
-     * =========================
-     * Entity → DTO
-     * =========================
-     */
+    // Entity → DTO
     private PlaylistDTO toDto(Playlist playlist) {
         return PlaylistDTO.builder()
                 .id(playlist.getId())
@@ -36,11 +32,8 @@ public class PlaylistService {
                 .build();
     }
 
-    /*
-     * =========================
-     * CREATE
-     * =========================
-     */
+    // CREATE
+
     public PlaylistDTO createPlaylist(PlaylistDTO dto) {
 
         String imageUrl = dto.getImageUrl() != null
@@ -58,11 +51,7 @@ public class PlaylistService {
         return toDto(playlist);
     }
 
-    /*
-     * =========================
-     * READ
-     * =========================
-     */
+    // READ
 
     // 플레이리스트 단건 조회
     @Transactional(readOnly = true)
@@ -83,11 +72,8 @@ public class PlaylistService {
                 .toList();
     }
 
-    /*
-     * =========================
-     * UPDATE
-     * =========================
-     */
+    // UPDATE
+
     public PlaylistDTO updatePlaylist(Long id, PlaylistDTO dto) {
 
         Playlist playlist = playlistRepository.findById(id)
@@ -106,11 +92,8 @@ public class PlaylistService {
         return toDto(playlist);
     }
 
-    /*
-     * =========================
-     * DELETE
-     * =========================
-     */
+    // DELETE
+
     public void deletePlaylist(Long id) {
 
         Playlist playlist = playlistRepository.findById(id)

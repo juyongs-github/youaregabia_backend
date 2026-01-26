@@ -15,10 +15,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-  @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-	  http.cors(Customizer.withDefaults())
-        // [현재 단계] REST 테스트 편하게 하려고 CSRF disable
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	    http.cors(Customizer.withDefaults())
+    	// [현재 단계] REST 테스트 편하게 하려고 CSRF disable
         // [JWT + 쿠키(리프레시)로 가면 CSRF 전략을 다시 정해야 함]
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
@@ -38,13 +38,14 @@ public class SecurityConfig {
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable);
 
-    return http.build();
-  }
+      return http.build();
+    }
 
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
 	// @Bean // 로그인 유저 정보 초기 세팅
 	// public UserDetailsService userDetailsService(PasswordEncoder encoder) {
 	// 	String password = encoder.encode("1234");

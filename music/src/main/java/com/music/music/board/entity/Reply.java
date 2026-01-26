@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.music.music.common.entity.BaseEntity;
-import com.music.music.user.entity.User;
+import com.music.music.user.entitiy.User;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

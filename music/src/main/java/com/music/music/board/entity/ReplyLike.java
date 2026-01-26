@@ -1,7 +1,7 @@
 package com.music.music.board.entity;
 
 import com.music.music.common.entity.BaseEntity;
-import com.music.music.user.entity.User;
+import com.music.music.user.entitiy.User;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

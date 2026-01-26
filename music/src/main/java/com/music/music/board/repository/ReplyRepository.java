@@ -23,7 +23,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
     select new com.music.music.board.dto.ReplyResponseDto(
         r.replyId,
         r.content,
-        u.nickname,
+        u.name,
         count(rl),
         sum(case when rl.user.id = :userId then 1 else 0 end),
         r.createdAt

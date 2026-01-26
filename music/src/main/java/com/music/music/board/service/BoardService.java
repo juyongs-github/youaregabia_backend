@@ -2,6 +2,10 @@ package com.music.music.board.service;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +16,8 @@ import com.music.music.board.entity.BoardType;
 import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
+import com.music.music.common.dto.PageRequestDTO;
+import com.music.music.common.dto.PageResultDTO;
 import com.music.music.user.entitiy.User;
 import com.music.music.user.repository.UserRepository;
 
@@ -28,12 +34,27 @@ public class BoardService {
     private final ReplyService replyService;
 
 
-    public List<BoardDto> getBoardList() {
-    List<Board> boards = boardRepository.findAll();
+    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto) {
+        
+        
+        Page<Board> result = null;
+
+        Pageable pageable = PageRequest.of(dto.getPage(), dto.getSize(),
+         Sort.by("id").descending());
+
+        result = boardRepository.findAll(pageable);
+
+
     
-    return boards.stream()
+        List<BoardDto> dtoList = result.stream()
             .map(BoardDto::new)  // 댓글 없는 생성자 사용
             .toList();
+
+        return PageResultDTO.<BoardDto>withAll()
+                .dtoList(dtoList)
+                .totalCount(result.getTotalElements())
+                .pageRequestDTO(dto)
+                .build();
 }
 
     public BoardDto getBoardDetail(Long boardId, Long userId) {

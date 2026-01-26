@@ -31,7 +31,7 @@ public class BoardDto {
         this.title = board.getTitle();
         this.content = board.getContent();
         this.writer = board.getUser() != null
-        ? board.getUser().getNickname()
+        ? board.getUser().getName()
         : "unknown";
         this.createdAt = board.getCreatedAt();
         this.replies = replies;
@@ -40,7 +40,7 @@ public class BoardDto {
     public BoardDto(Board board) {
     this.boardId = board.getBoardId();
     this.title = board.getTitle();
-    this.writer = board.getUser().getNickname();
+    this.writer = board.getUser().getName();
     this.createdAt = board.getCreatedAt();
 }
     

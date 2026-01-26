@@ -25,10 +25,10 @@ public class BoardController {
 
     
 
-    @GetMapping
-    public List<BoardDto> getBoardList() {
-    return boardService.getBoardList();
-}
+//     @GetMapping
+//     public List<BoardDto> getBoardList() {
+//     return boardService.getBoardList();
+// }
     
 
     @GetMapping("/{boardId}")

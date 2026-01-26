@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.entity.Playlist;
+import com.music.music.playlist.entity.constant.PlaylistType;
 import com.music.music.playlist.repository.PlaylistRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class PlaylistService {
                 .title(playlist.getTitle())
                 .description(playlist.getDescription())
                 .imageUrl(playlist.getImageUrl())
+                .type(playlist.getType())
                 .songCount(
                         playlist.getPlaylistSongs() != null
                                 ? playlist.getPlaylistSongs().size()
@@ -51,6 +53,7 @@ public class PlaylistService {
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .imageUrl(imageUrl)
+                .type(PlaylistType.MYPLAYLIST)
                 .build();
 
         playlistRepository.save(playlist);

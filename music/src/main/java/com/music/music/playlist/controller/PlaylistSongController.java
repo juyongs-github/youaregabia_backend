@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 
-@RequestMapping("/playlists")
+@RequestMapping("/api/playlists")
 @RequiredArgsConstructor
 @RestController
 public class PlaylistSongController {

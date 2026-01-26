@@ -3,6 +3,7 @@ package com.music.music.playlist.dto;
 import java.util.List;
 
 import com.music.music.api.entity.SongDTO;
+import com.music.music.playlist.entity.constant.PlaylistType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,8 @@ public class PlaylistDTO {
     private String description;
 
     private String imageUrl;
+
+    private PlaylistType type;
 
     // 플레이리스트에 속한 곡 수
     private int songCount;

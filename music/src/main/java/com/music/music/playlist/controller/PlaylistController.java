@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.music.music.playlist.dto.PlaylistDTO;
+import com.music.music.playlist.service.PlaylistService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,11 +20,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@RequestMapping("/playlists")
+@RequestMapping("/api/playlists")
 @RequiredArgsConstructor
 @RestController
 public class PlaylistController {
-    private final com.music.music.playlist.service.PlaylistService playlistService;
+    private final PlaylistService playlistService;
 
     // CREATE
     @PostMapping("/add")
@@ -37,7 +38,7 @@ public class PlaylistController {
 
     // 플레이리스트 단건 조회
     @GetMapping("/{id}")
-    public ResponseEntity<PlaylistDTO> getPlaylist(@RequestParam Long id) {
+    public ResponseEntity<PlaylistDTO> getPlaylist(@PathVariable Long id) {
         return ResponseEntity.ok(playlistService.getPlaylist(id));
     }
 

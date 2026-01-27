@@ -1,14 +1,19 @@
 package com.music.music.playlist.service;
 
+// import static org.mockito.Mockito.description;
+
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.music.music.common.service.FileService;
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.entity.Playlist;
 import com.music.music.playlist.entity.constant.PlaylistType;
 import com.music.music.playlist.repository.PlaylistRepository;
+import com.music.music.user.entitiy.User;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
+    private final FileService fileService;
 
     /*
      * =========================
@@ -43,17 +49,51 @@ public class PlaylistService {
      * CREATE
      * =========================
      */
-    public PlaylistDTO createPlaylist(PlaylistDTO dto) {
+    // public PlaylistDTO createPlaylist(PlaylistDTO dto) {
 
-        String imageUrl = dto.getImageUrl() != null
-                ? dto.getImageUrl()
-                : "/images/default-playlist.png";
+    // String imageUrl = dto.getImageUrl() != null
+    // ? dto.getImageUrl()
+    // : "/images/default-playlist.png";
+
+    // Playlist playlist = Playlist.builder()
+    // .title(dto.getTitle())
+    // .description(dto.getDescription())
+    // .imageUrl(imageUrl)
+    // .type(PlaylistType.MYPLAYLIST)
+    // .build();
+
+    // playlistRepository.save(playlist);
+
+    // return toDto(playlist);
+    // }
+
+    public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, User user) {
+
+        // String imageUrl = dto.getImageUrl() != null
+        // ? dto.getImageUrl()
+        // : "/images/default-playlist.png";
+
+        // Playlist playlist = Playlist.builder()
+        // .title(dto.getTitle())
+        // .description(dto.getDescription())
+        // .imageUrl(imageUrl)
+        // .type(PlaylistType.MYPLAYLIST)
+        // .build();
+
+        String imageUrl;
+
+        if (file != null && !file.isEmpty()) {
+            imageUrl = fileService.upload(file);
+        } else {
+            imageUrl = "/images/default-playlist.png";
+        }
 
         Playlist playlist = Playlist.builder()
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .imageUrl(imageUrl)
+                .user(user)
                 .type(PlaylistType.MYPLAYLIST)
+                .title(title)
+                .description(description)
+                .imageUrl(imageUrl)
                 .build();
 
         playlistRepository.save(playlist);

@@ -2,9 +2,12 @@ package com.music.music.playlist.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.service.PlaylistService;
+import com.music.music.user.entitiy.User;
+import com.music.music.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,14 +28,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestController
 public class PlaylistController {
     private final PlaylistService playlistService;
+    private final UserRepository userRepository;
 
     // CREATE
-    @PostMapping("/add")
-    public ResponseEntity<PlaylistDTO> postPlaylist(@RequestBody PlaylistDTO dto) {
-        PlaylistDTO PlaylistDTO = playlistService.createPlaylist(dto);
+    // @PostMapping("/add")
+    // public ResponseEntity<PlaylistDTO> postPlaylist(@RequestBody PlaylistDTO dto)
+    // {
+    // PlaylistDTO PlaylistDTO = playlistService.createPlaylist(dto);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(PlaylistDTO);
-    }
+    // return ResponseEntity.status(HttpStatus.CREATED).body(PlaylistDTO);
+    // }
 
     // READ
 
@@ -43,10 +48,10 @@ public class PlaylistController {
     }
 
     // 플레이리스트 전체 목록 조회
-    @GetMapping("/")
-    public ResponseEntity<List<PlaylistDTO>> getAllPlaylists() {
-        return ResponseEntity.ok(playlistService.getAllPlaylists());
-    }
+    // @GetMapping("/")
+    // public ResponseEntity<List<PlaylistDTO>> getAllPlaylists() {
+    // return ResponseEntity.ok(playlistService.getAllPlaylists());
+    // }
 
     // UPDATE
     @PutMapping("/{id}")
@@ -63,6 +68,21 @@ public class PlaylistController {
 
         return ResponseEntity.noContent().build();
 
+    }
+
+    @GetMapping("/all")
+    public List<PlaylistDTO> getAllPlaylists() {
+        return playlistService.getAllPlaylists();
+    }
+
+    @PostMapping
+    public ResponseEntity<Void> createPlaylist(
+            @RequestParam MultipartFile file,
+            @RequestParam String title,
+            @RequestParam String description) {
+        User user = userRepository.findById(1L).orElseThrow(() -> new IllegalStateException("해당 유저 없음"));
+        playlistService.createPlaylist(file, title, description, user);
+        return ResponseEntity.ok().build();
     }
 
 }

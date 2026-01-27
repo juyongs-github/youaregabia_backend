@@ -49,25 +49,6 @@ public class PlaylistService {
      * CREATE
      * =========================
      */
-<<<<<<< HEAD
-    // public PlaylistDTO createPlaylist(PlaylistDTO dto) {
-
-    // String imageUrl = dto.getImageUrl() != null
-    // ? dto.getImageUrl()
-    // : "/images/default-playlist.png";
-
-    // Playlist playlist = Playlist.builder()
-    // .title(dto.getTitle())
-    // .description(dto.getDescription())
-    // .imageUrl(imageUrl)
-    // .type(PlaylistType.MYPLAYLIST)
-    // .build();
-
-    // playlistRepository.save(playlist);
-
-    // return toDto(playlist);
-    // }
-
     public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, User user) {
 
         // String imageUrl = dto.getImageUrl() != null
@@ -78,21 +59,7 @@ public class PlaylistService {
         // .title(dto.getTitle())
         // .description(dto.getDescription())
         // .imageUrl(imageUrl)
-        // .type(PlaylistType.MYPLAYLIST)
         // .build();
-=======
-    public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, User user) {
-
-        // String imageUrl = dto.getImageUrl() != null
-        //         ? dto.getImageUrl()
-        //         : "/images/default-playlist.png";
-
-        // Playlist playlist = Playlist.builder()
-        //         .title(dto.getTitle())
-        //         .description(dto.getDescription())
-        //         .imageUrl(imageUrl)
-        //         .build();
->>>>>>> origin/feature/jylee_2
 
         String imageUrl;
 
@@ -103,21 +70,12 @@ public class PlaylistService {
         }
 
         Playlist playlist = Playlist.builder()
-<<<<<<< HEAD
                 .user(user)
                 .type(PlaylistType.MYPLAYLIST)
                 .title(title)
                 .description(description)
                 .imageUrl(imageUrl)
                 .build();
-=======
-            .user(user)
-            .type(PlaylistType.MYPLAYLIST)
-            .title(title)
-            .description(description)
-            .imageUrl(imageUrl)
-            .build();
->>>>>>> origin/feature/jylee_2
 
         playlistRepository.save(playlist);
 

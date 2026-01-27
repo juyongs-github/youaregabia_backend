@@ -2,6 +2,8 @@ package com.music.music.board.repository;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -10,7 +12,7 @@ import com.music.music.board.entity.Reply;
 
 public interface ReplyRepository extends JpaRepository<Reply, Long>{
      // 특정 게시글의 댓글 조회 (최신순)
-    List<Reply> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId);
+    Page<Reply> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
 
     // 특정 게시글의 댓글 개수
     long countByBoard_BoardId(Long boardId);
@@ -35,9 +37,10 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
     group by r, u
     order by count(rl) desc, r.createdAt desc
     """)
-    List<ReplyResponseDto> findRepliesWithLikeInfo(
+    Page<ReplyResponseDto> findRepliesWithLikeInfo(
             Long boardId,
-            Long userId
+            Long userId,
+            Pageable pageable
     );
 
 }

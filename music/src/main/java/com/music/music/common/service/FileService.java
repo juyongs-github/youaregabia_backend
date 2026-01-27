@@ -72,4 +72,8 @@ public class FileService {
     private String getExtension(String filename) {
         return filename.substring(filename.lastIndexOf('.') + 1);
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/feature/jylee_2

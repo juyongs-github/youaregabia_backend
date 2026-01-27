@@ -28,10 +28,6 @@ public class ReplyService {
     private final ReplyLikeRepository replyLikeRepository;
 
     
-    
-    public List<ReplyResponseDto> getReplies(Long boardId, Long userId) {
-    return replyRepository.findRepliesWithLikeInfo(boardId, userId);
-    }
 
 
     

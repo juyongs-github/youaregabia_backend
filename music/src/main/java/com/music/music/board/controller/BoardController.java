@@ -14,9 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.music.music.board.dto.BoardDto;
 import com.music.music.board.service.BoardService;
+import com.music.music.common.dto.PageRequestDTO;
+import com.music.music.common.dto.PageResultDTO;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/community/share")
@@ -26,18 +30,24 @@ public class BoardController {
     
 
     @GetMapping
-    public List<BoardDto> getBoardList() {
-    return boardService.getBoardList();
+    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto) {
+    
+        log.info("전체 조회 신청");
+        PageResultDTO<BoardDto> result = boardService.getBoardList(dto);
+        return result;
 }
+
     
 
     @GetMapping("/{boardId}")
-    public BoardDto getBoardDetail(@PathVariable Long boardId,  @RequestParam Long userId) {
-        return boardService.getBoardDetail(boardId, userId);
+    public BoardDto getBoardDetail(@PathVariable Long boardId,  @RequestParam Long userId, PageRequestDTO dto) {
+        log.info("상세 조회 신청 ",boardId,userId,dto.getPage());
+        return boardService.getBoardDetail(boardId, userId,dto);
     }
 
     @PostMapping
     public Long createBoard(@RequestParam Long userId,@RequestBody BoardDto dto) {
+        log.info("게시글 생성");
         return boardService.createBoard(userId, dto);
 }
 
@@ -46,12 +56,15 @@ public class BoardController {
         @PathVariable Long boardId,
         @RequestParam Long userId,
         @RequestBody BoardDto dto) {
-        boardService.updateBoard(boardId, userId, dto);
+            log.info("게시글 수정");
+            boardService.updateBoard(boardId, userId, dto);
 }
+
     @DeleteMapping("/{boardId}")
     public void deleteBoard(
         @PathVariable Long boardId,
         @RequestParam Long userId) {
-        boardService.deleteBoard(boardId, userId);
+            log.info("게시글 삭제");
+            boardService.deleteBoard(boardId, userId);
 }
 }

@@ -36,15 +36,16 @@ public class PlaylistController {
         return playlistService.getAllPlaylists();
     }
 
-    // 플레이리스트 생성 (/playlist + POST)
+    // playlist_song 테이블 매핑 될 수 있도록 수정
     @PostMapping
-    public ResponseEntity<Void> createPlaylist(
-            @RequestParam MultipartFile file,
+    public ResponseEntity<PlaylistDTO> createPlaylist(
+            @RequestParam(required = false) MultipartFile file,
             @RequestParam String title,
-            @RequestParam String description) {
+            @RequestParam String description,
+            @RequestParam(required = false) List<Long> songIds) {
         User user = userRepository.findById(1L).orElseThrow(() -> new IllegalStateException("해당 유저 없음"));
-        playlistService.createPlaylist(file, title, description, user);
-        return ResponseEntity.ok().build();
+        PlaylistDTO playlistDTO = playlistService.createPlaylist(file, title, description, songIds, user);
+        return ResponseEntity.ok(playlistDTO);
     }
 
     // 수정한 부분

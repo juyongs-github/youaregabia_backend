@@ -38,3 +38,6 @@ out/
 
 ### gradle ###
 gradle.properties
+
+### Upload Files ###
+/uploads/

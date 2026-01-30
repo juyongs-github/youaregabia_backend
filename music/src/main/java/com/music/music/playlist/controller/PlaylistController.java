@@ -37,15 +37,39 @@ public class PlaylistController {
         return playlistService.getAllPlaylists();
     }
     
-
+    // playlist_song 테이블 매핑 될 수 있도록 수정
     @PostMapping
-    public ResponseEntity<Void> createPlaylist(
-        @RequestParam MultipartFile file, 
+    public ResponseEntity<PlaylistDTO> createPlaylist(
+        @RequestParam(required = false) MultipartFile file, 
         @RequestParam String title, 
-        @RequestParam String description) {
+        @RequestParam String description,
+        @RequestParam(required = false) List<Long> songIds) {
         User user = userRepository.findById(1L).orElseThrow(() -> new IllegalStateException("해당 유저 없음"));
-        playlistService.createPlaylist(file, title, description, user);
-        return ResponseEntity.ok().build();
+        PlaylistDTO playlistDTO = playlistService.createPlaylist(file, title, description, songIds, user);
+        return ResponseEntity.ok(playlistDTO);
     }
     
+    // 수정한 부분
+
+    // 플레이리스트 상세 조회 (/playlist/{id} + GET)
+    @GetMapping("/{id}")
+    public PlaylistDTO getPlaylist(@PathVariable Long id) {
+
+        return playlistService.getPlaylist(id);
+    }
+
+    // 플레이리스트 수정 (/playlist/{id} + PUT)
+    @PutMapping("/{id}")
+    public PlaylistDTO putPlaylist(@PathVariable Long id, @RequestBody PlaylistDTO dto) {
+
+        return playlistService.updatePlaylist(id, dto);
+    }
+
+    // 플레이리스트 삭제 (/playlist/{id} + DELETE)
+    @DeleteMapping("/{id}")
+    public String deletePlaylist(@PathVariable Long id) {
+        playlistService.deletePlaylist(id);
+
+        return "삭제완료";
+    }
 }

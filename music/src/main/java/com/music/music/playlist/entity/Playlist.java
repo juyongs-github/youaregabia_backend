@@ -52,6 +52,7 @@ public class Playlist extends BaseEntity {
 
     private String description;
 
+    @Builder.Default
     @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlaylistSong> playlistSongs = new ArrayList<>();
 

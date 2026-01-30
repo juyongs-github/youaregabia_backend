@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.music.music.api.repository.SongRepository;
-import com.music.music.common.service.FileService;
+import com.music.music.board.common.service.FileService;
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.entity.Playlist;
 import com.music.music.playlist.entity.Song;
@@ -53,7 +53,8 @@ public class PlaylistService {
      * =========================
      */
     @Transactional
-    public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, List<Long> songIds, User user) {
+    public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, List<Long> songIds,
+            User user) {
 
         // String imageUrl = dto.getImageUrl() != null
         // ? dto.getImageUrl()
@@ -82,9 +83,9 @@ public class PlaylistService {
                 .build();
 
         // playlist_song 테이블에 곡 매핑
-        if(songIds != null) {
+        if (songIds != null) {
             List<Song> songs = songRepository.findAllById(songIds);
-            for(Song song : songs) {
+            for (Song song : songs) {
                 playlist.addSong(song);
             }
         }

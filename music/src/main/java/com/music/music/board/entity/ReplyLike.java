@@ -1,6 +1,6 @@
 package com.music.music.board.entity;
 
-import com.music.music.common.entity.BaseEntity;
+import com.music.music.board.common.entity.BaseEntity;
 import com.music.music.user.entitiy.User;
 
 import jakarta.persistence.Entity;
@@ -22,7 +22,7 @@ import lombok.ToString;
 @Getter
 @ToString
 @Entity
-public class ReplyLike extends BaseEntity{
+public class ReplyLike extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long replyLikeId;

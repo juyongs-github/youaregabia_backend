@@ -8,9 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.music.music.api.repository.SongRepository;
 import com.music.music.common.service.FileService;
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.entity.Playlist;
+import com.music.music.playlist.entity.Song;
 import com.music.music.playlist.entity.constant.PlaylistType;
 import com.music.music.playlist.repository.PlaylistRepository;
 import com.music.music.user.entitiy.User;
@@ -23,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
+    private final SongRepository songRepository;
     private final FileService fileService;
 
     /*
@@ -49,7 +52,8 @@ public class PlaylistService {
      * CREATE
      * =========================
      */
-    public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, User user) {
+    @Transactional
+    public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, List<Long> songIds, User user) {
 
         // String imageUrl = dto.getImageUrl() != null
         // ? dto.getImageUrl()
@@ -76,6 +80,14 @@ public class PlaylistService {
                 .description(description)
                 .imageUrl(imageUrl)
                 .build();
+
+        // playlist_song 테이블에 곡 매핑
+        if(songIds != null) {
+            List<Song> songs = songRepository.findAllById(songIds);
+            for(Song song : songs) {
+                playlist.addSong(song);
+            }
+        }
 
         playlistRepository.save(playlist);
 

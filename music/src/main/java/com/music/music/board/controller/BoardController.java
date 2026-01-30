@@ -29,42 +29,40 @@ public class BoardController {
 
     
 
-    @GetMapping
-    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto) {
-    
-        log.info("전체 조회 신청");
-        PageResultDTO<BoardDto> result = boardService.getBoardList(dto);
+    @GetMapping("")
+    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,@RequestParam(required = false) String keyword) {
+        log.info("전체 조회 신청 {}", keyword);
+        // 키워드는 필수가 아님
+        PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword);
         return result;
-}
+    }
 
     
 
     @GetMapping("/{boardId}")
     public BoardDto getBoardDetail(@PathVariable Long boardId,  @RequestParam Long userId, PageRequestDTO dto) {
-        log.info("상세 조회 신청 ",boardId,userId,dto.getPage());
+        log.info("상세 조회 신청 {}, {},{}",boardId,userId,dto.getPage());
         return boardService.getBoardDetail(boardId, userId,dto);
     }
 
-    @PostMapping
+    @PostMapping("/add")
     public Long createBoard(@RequestParam Long userId,@RequestBody BoardDto dto) {
-        log.info("게시글 생성");
+        log.info("게시글 생성 {}", dto);
         return boardService.createBoard(userId, dto);
-}
+    }
 
-    @PutMapping("/{boardId}")
+    @PutMapping("update/{boardId}")
     public void updateBoard(
-        @PathVariable Long boardId,
-        @RequestParam Long userId,
-        @RequestBody BoardDto dto) {
-            log.info("게시글 수정");
-            boardService.updateBoard(boardId, userId, dto);
-}
+        @PathVariable Long boardId,@RequestParam Long userId,@RequestBody BoardDto dto) {
+        log.info("게시글 수정 {}", dto);
+        boardService.updateBoard(boardId, userId, dto);
+    }
 
-    @DeleteMapping("/{boardId}")
-    public void deleteBoard(
-        @PathVariable Long boardId,
-        @RequestParam Long userId) {
-            log.info("게시글 삭제");
-            boardService.deleteBoard(boardId, userId);
-}
+    @DeleteMapping("delete/{boardId}")
+    public void deleteBoard(@PathVariable Long boardId,@RequestParam Long userId) {
+        log.info("게시글 삭제 {}", boardId);
+        boardService.deleteBoard(boardId, userId);
+    }
+
+
 }

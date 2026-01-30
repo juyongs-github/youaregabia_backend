@@ -33,6 +33,7 @@ public class UserRepositorytest {
         .phoneNumber("010-1234-5678")
         .address("테스트나라에살아요")
         .createdAt(LocalDateTime.now())
+        .ci("dfdfasfe")
         .build();
 
     // when

@@ -16,6 +16,25 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
 
     // 특정 게시글의 댓글 개수
     long countByBoard_BoardId(Long boardId);
+
+    // 최신순 전용
+    @Query("""
+    select new com.music.music.board.dto.ReplyResponseDto(
+    r.replyId,
+    r.content,
+    u.name,
+    count(rl),
+    sum(case when rl.user.id = :userId then 1 else 0 end),
+    r.createdAt
+    )
+    from Reply r
+    join r.user u
+    left join ReplyLike rl on rl.reply = r
+    where r.board.boardId = :boardId
+    group by r, u
+    order by r.createdAt desc
+    """)
+    Page<ReplyResponseDto> findRepliesLatest(Long boardId,Long userId,Pageable pageable);
     
 
 // 좋아요기준 댓글 정렬+좋아요 기능 jpql

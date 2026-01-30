@@ -24,25 +24,25 @@ public class ReplyController {
     @PostMapping("/{boardId}/replies")
     public Long createReply(
             @PathVariable Long boardId,
-            @RequestParam Long userId,
+            @RequestParam String email,
             @RequestBody ReplyCreateDto dto) {
-        return replyService.createReply(boardId, userId, dto);
+        return replyService.createReply(boardId, email, dto);
     }
 
     // 댓글 삭제
     @DeleteMapping("/replies/{replyId}")
     public void deleteReply(
             @PathVariable Long replyId,
-            @RequestParam Long userId) {
-        replyService.deleteReply(replyId, userId);
+            @RequestParam String email) {
+        replyService.deleteReply(replyId, email);
     }
 
     @PutMapping("/replies/{replyId}")
     public void updateReply(
         @PathVariable Long replyId,
-        @RequestParam Long userId,
+        @RequestParam String email,
         @RequestBody ReplyCreateDto dto) {
-        replyService.updateReply(replyId, userId, dto);
+        replyService.updateReply(replyId, email, dto);
     }
 }
 

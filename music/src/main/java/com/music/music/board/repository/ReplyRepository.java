@@ -18,23 +18,24 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
     long countByBoard_BoardId(Long boardId);
 
     // 최신순 전용
+    // null 일 떄를 위해서 coalsece/
     @Query("""
     select new com.music.music.board.dto.ReplyResponseDto(
     r.replyId,
     r.content,
     u.name,
-    count(rl),
-    sum(case when rl.user.id = :userId then 1 else 0 end),
+    coalesce(count(rl), 0),
+    coalesce(sum(case when rl.user.email = :email then 1 else 0 end), 0),
     r.createdAt
     )
     from Reply r
     join r.user u
-    left join ReplyLike rl on rl.reply = r
+    left join ReplyLike rl on rl.reply.replyId = r.replyId and rl.user.email = :email
     where r.board.boardId = :boardId
-    group by r, u
+    group by r.replyId, r.content, u.name, r.createdAt
     order by r.createdAt desc
     """)
-    Page<ReplyResponseDto> findRepliesLatest(Long boardId,Long userId,Pageable pageable);
+    Page<ReplyResponseDto> findRepliesLatest(Long boardId,String email,Pageable pageable);
     
 
 // 좋아요기준 댓글 정렬+좋아요 기능 jpql
@@ -45,20 +46,20 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
         r.replyId,
         r.content,
         u.name,
-        count(rl),
-        sum(case when rl.user.id = :userId then 1 else 0 end),
+        coalesce(count(rl), 0),
+        coalesce(sum(case when rl.user.email = :email then 1 else 0 end), 0),
         r.createdAt
     )
     from Reply r
     join r.user u
-    left join ReplyLike rl on rl.reply = r
+    left join ReplyLike rl on rl.reply.replyId = r.replyId and rl.user.email = :email
     where r.board.boardId = :boardId
-    group by r, u
+    group by r.replyId, r.content, u.name, r.createdAt
     order by count(rl) desc, r.createdAt desc
     """)
     Page<ReplyResponseDto> findRepliesWithLikeInfo(
             Long boardId,
-            Long userId,
+            String email,
             Pageable pageable
     );
 

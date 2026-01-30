@@ -20,21 +20,21 @@ public class ReplyLikeService {
     private final ReplyLikeRepository replyLikeRepository;
     private final UserRepository userRepository;
 
-        public long toggleLike(Long replyId, Long userId) {
+        public long toggleLike(Long replyId, String email) {
 
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
 
                 // 좋아요 이미 눌렀는지 확인
         boolean alreadyLiked =
-                replyLikeRepository.existsByReply_ReplyIdAndUser_Id(replyId, userId);
+                replyLikeRepository.existsByReply_ReplyIdAndUser_Email(replyId, email);
 
                 // 이미 눌렀으면 좋아요를 취소
         if (alreadyLiked) {
-            replyLikeRepository.deleteByReply_ReplyIdAndUser_Id(replyId, userId);
+            replyLikeRepository.deleteByReply_ReplyIdAndUser_Email(replyId, email);
         } else {
             replyLikeRepository.save(
                     ReplyLike.builder()

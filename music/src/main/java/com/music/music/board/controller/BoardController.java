@@ -40,28 +40,28 @@ public class BoardController {
     
 
     @GetMapping("/{boardId}")
-    public BoardDto getBoardDetail(@PathVariable Long boardId,  @RequestParam Long userId, PageRequestDTO dto) {
-        log.info("상세 조회 신청 {}, {},{}",boardId,userId,dto.getPage());
-        return boardService.getBoardDetail(boardId, userId,dto);
+    public BoardDto getBoardDetail(@PathVariable Long boardId,  @RequestParam(required = false) String email, PageRequestDTO dto) {
+        log.info("상세 조회 신청 {}, {},{}",boardId,email,dto.getPage());
+        return boardService.getBoardDetail(boardId, email,dto);
     }
 
     @PostMapping("/add")
-    public Long createBoard(@RequestParam Long userId,@RequestBody BoardDto dto) {
+    public Long createBoard(@RequestParam String email,@RequestBody BoardDto dto) {
         log.info("게시글 생성 {}", dto);
-        return boardService.createBoard(userId, dto);
+        return boardService.createBoard(email, dto);
     }
 
     @PutMapping("update/{boardId}")
     public void updateBoard(
-        @PathVariable Long boardId,@RequestParam Long userId,@RequestBody BoardDto dto) {
+        @PathVariable Long boardId,@RequestParam String email,@RequestBody BoardDto dto) {
         log.info("게시글 수정 {}", dto);
-        boardService.updateBoard(boardId, userId, dto);
+        boardService.updateBoard(boardId, email, dto);
     }
 
     @DeleteMapping("delete/{boardId}")
-    public void deleteBoard(@PathVariable Long boardId,@RequestParam Long userId) {
+    public void deleteBoard(@PathVariable Long boardId,@RequestParam String email) {
         log.info("게시글 삭제 {}", boardId);
-        boardService.deleteBoard(boardId, userId);
+        boardService.deleteBoard(boardId, email);
     }
 
 

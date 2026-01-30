@@ -64,10 +64,13 @@ public class BoardService {
                 .build();
     }
 
-    public BoardDto getBoardDetail(Long boardId, Long userId, PageRequestDTO dto) {
+    public BoardDto getBoardDetail(Long boardId, String email, PageRequestDTO dto) {
 
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+        
+        // email이 비어있거나 null이면 익명 사용자 처리
+        String userEmail = (email == null || email.trim().isEmpty()) ? "" : email;
 
 
         // 댓글 페이징
@@ -78,9 +81,9 @@ public class BoardService {
         Page<ReplyResponseDto> replyPage;
             
         if ("likes".equals(dto.getSort())) {
-            replyPage = replyRepository.findRepliesWithLikeInfo(boardId, userId, pageable);
+            replyPage = replyRepository.findRepliesWithLikeInfo(boardId, userEmail, pageable);
         } else {
-            replyPage = replyRepository.findRepliesLatest(boardId, userId, pageable);
+            replyPage = replyRepository.findRepliesLatest(boardId, userEmail, pageable);
         }
         
         PageResultDTO<ReplyResponseDto> replies = PageResultDTO.<ReplyResponseDto>withAll()
@@ -95,9 +98,9 @@ public class BoardService {
 
 
     @Transactional
-    public Long createBoard(Long userId, BoardDto dto) {
+    public Long createBoard(String email, BoardDto dto) {
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
 
         Board board = Board.builder()
@@ -111,12 +114,12 @@ public class BoardService {
     }
 
     @Transactional
-    public void updateBoard(Long boardId, Long userId, BoardDto dto) {
+    public void updateBoard(Long boardId, String email, BoardDto dto) {
 
         Board board = boardRepository.findById(boardId)
             .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
-        if (!board.getUser().getId().equals(userId)) {
+        if (!board.getUser().getEmail().equals(email)) {
         throw new IllegalStateException("게시글 수정 권한이 없습니다.");
         }
 
@@ -124,12 +127,12 @@ public class BoardService {
     }
 
     @Transactional
-    public void deleteBoard(Long boardId, Long userId) {
+    public void deleteBoard(Long boardId, String email) {
 
         Board board = boardRepository.findById(boardId)
             .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
-        if (!board.getUser().getId().equals(userId)) {
+        if (!board.getUser().getEmail().equals(email)) {
         throw new IllegalStateException("게시글 삭제 권한이 없습니다.");
         }
 

@@ -32,12 +32,12 @@ public class ReplyService {
 
     
 
-    public Long createReply(Long boardId, Long userId, ReplyCreateDto dto) {
+    public Long createReply(Long boardId, String email, ReplyCreateDto dto) {
 
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
 
         Reply reply = Reply.builder()
@@ -49,12 +49,12 @@ public class ReplyService {
         return replyRepository.save(reply).getReplyId();
     }
 
-    public void deleteReply(Long replyId, Long userId) {
+    public void deleteReply(Long replyId, String email) {
 
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
 
-        if (!reply.getUser().getId().equals(userId)) {
+        if (!reply.getUser().getEmail().equals(email)) {
             throw new IllegalStateException("댓글 삭제 권한이 없습니다.");
         }
 
@@ -62,12 +62,12 @@ public class ReplyService {
 
     }
     @Transactional
-public void updateReply(Long replyId, Long userId, ReplyCreateDto dto) {
+public void updateReply(Long replyId, String email, ReplyCreateDto dto) {
 
     Reply reply = replyRepository.findById(replyId)
             .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
 
-    if (!reply.getUser().getId().equals(userId)) {
+    if (!reply.getUser().getEmail().equals(email)) {
         throw new IllegalStateException("댓글 수정 권한이 없습니다.");
     }
 

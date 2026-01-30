@@ -22,24 +22,21 @@ public class FileService {
             // 1. 업로드 루트 디렉터리
             Path rootDir = Paths.get(uploadDir).toAbsolutePath().normalize();
 
-            // 2. playlist 하위 디렉터리
-            Path playlistDir = rootDir.resolve("playlist");
+            // 2. 디렉터리 없으면 생성
+            Files.createDirectories(rootDir);
 
-            // 3. 디렉터리 없으면 생성 (상위까지 전부)
-            Files.createDirectories(playlistDir);
+            // 3. 파일명 생성
+            String fileOriginName = file.getOriginalFilename();
+            String filename = System.currentTimeMillis() + "_" + fileOriginName;
 
-            // 4. 파일명 생성
-            String ext = getExtension(file.getOriginalFilename());
-            String filename = UUID.randomUUID() + "." + ext;
+            // 4. 저장 경로
+            Path targetPath = rootDir.resolve(filename).normalize();
 
-            // 5. 저장 경로
-            Path targetPath = playlistDir.resolve(filename).normalize();
-
-            // 6. 파일 저장
+            // 5. 파일 저장
             file.transferTo(targetPath.toFile());
 
-            // 7. URL 반환
-            return "/uploads/playlist/" + filename;
+            // 6. URL 반환
+            return "/uploads/" + filename;
 
         } catch (IOException e) {
             throw new RuntimeException("파일 업로드 실패", e);

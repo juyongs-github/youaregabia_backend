@@ -1,4 +1,4 @@
-package com.music.music.common.dto;
+package com.music.music.board.common.dto;
 
 import java.util.List;
 import java.util.stream.Collectors;

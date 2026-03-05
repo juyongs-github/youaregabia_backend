@@ -231,8 +231,7 @@ public class MusicApiService {
 
                     for (ArtistDTO artistDTO : filterSimilarArtistList) {
                         String term = artistDTO.getName();
-                        ItunesSearchResponse itunesSearchResponse = getTrackInfo(term, "artistTerm", 3); // 아티스트 당 3곡씩
-                                                                                                         // 가져오기
+                        ItunesSearchResponse itunesSearchResponse = getTrackInfo(term, "artistTerm", 3); // 아티스트 당 3곡씩 가져오기
 
                         // 가져오기 실패 시 skip
                         if (itunesSearchResponse == null) {

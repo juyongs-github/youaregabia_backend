@@ -3,7 +3,7 @@ package com.music.music.board.entity;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.music.music.common.entity.BaseEntity;
+import com.music.music.board.common.entity.BaseEntity;
 import com.music.music.user.entitiy.User;
 
 import jakarta.persistence.CascadeType;
@@ -28,8 +28,8 @@ import lombok.ToString;
 @Getter
 @ToString(exclude = "replyLikes")
 @Entity
-public class Reply extends BaseEntity{
-    
+public class Reply extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long replyId;
@@ -55,6 +55,6 @@ public class Reply extends BaseEntity{
     private List<ReplyLike> replyLikes = new ArrayList<>();
 
     public void updateContent(String content) {
-    this.content = content;
-}
+        this.content = content;
+    }
 }

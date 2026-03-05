@@ -1,4 +1,4 @@
-package com.music.music.common.service;
+package com.music.music.board.common.service;
 
 import java.io.IOException;
 import java.nio.file.Files;

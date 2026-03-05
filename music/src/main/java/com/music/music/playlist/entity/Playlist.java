@@ -3,7 +3,7 @@ package com.music.music.playlist.entity;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.music.music.common.entity.BaseEntity;
+import com.music.music.board.common.entity.BaseEntity;
 import com.music.music.playlist.entity.constant.PlaylistType;
 import com.music.music.user.entitiy.User;
 

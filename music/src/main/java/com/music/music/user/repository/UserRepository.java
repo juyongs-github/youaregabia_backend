@@ -27,4 +27,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
    * 삭제된 row 수를 반환.
    */
   long deleteByEmail(String email);
+
+  // CI값 중복되면 안되서 체크필요
+  boolean existsByCi(String ci);
 }

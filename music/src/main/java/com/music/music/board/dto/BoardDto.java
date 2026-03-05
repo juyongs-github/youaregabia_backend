@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.music.music.board.entity.Board;
+import com.music.music.common.dto.PageResultDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,9 +25,10 @@ public class BoardDto {
     private String content;
     private String writer;
     private LocalDateTime createdAt;
-    private List<ReplyResponseDto> replies;
+    // reply 페이징을 위해서 PageResultDTO로 변경
+    private PageResultDTO<ReplyResponseDto> replies;
 
-    public BoardDto(Board board, List<ReplyResponseDto> replies) {
+    public BoardDto(Board board, PageResultDTO<ReplyResponseDto> replies) {
         this.boardId = board.getBoardId();
         this.title = board.getTitle();
         this.content = board.getContent();
@@ -37,6 +39,7 @@ public class BoardDto {
         this.replies = replies;
     }
     
+    // 목록용 생성자 (댓글 없음)
     public BoardDto(Board board) {
     this.boardId = board.getBoardId();
     this.title = board.getTitle();

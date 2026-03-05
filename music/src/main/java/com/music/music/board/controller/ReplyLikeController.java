@@ -20,8 +20,8 @@ public class ReplyLikeController {
     private final ReplyLikeService replyLikeService;
 
     @PostMapping("/{replyId}/like")
-    public long toggleLike(@PathVariable Long replyId, @RequestParam Long userId) {
-        return replyLikeService.toggleLike(replyId, userId);
+    public long toggleLike(@PathVariable Long replyId, @RequestParam String email) {
+        return replyLikeService.toggleLike(replyId, email);
     }
     
     

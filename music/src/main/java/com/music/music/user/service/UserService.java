@@ -44,6 +44,17 @@ public class UserService {
   }
 
   public User register(RegisterRequest request) {
+
+    // 1️⃣ CI 필수 체크
+    if (request.getCi() == null || request.getCi().isBlank()) {
+      throw new IllegalArgumentException("본인인증(CI)이 필요합니다.");
+    }
+
+    // 2️⃣ CI 중복 체크
+    if (userRepository.existsByCi(request.getCi())) {
+      throw new IllegalArgumentException("이미 가입된 사용자입니다.");
+    }
+
     // [ADD] 이메일 normalize(대소문자 혼합 중복 방지)
     String normalizedEmail = normalizeEmail(request.getEmail());
 
@@ -63,9 +74,10 @@ public class UserService {
         .email(normalizedEmail) // [FIX] normalize된 이메일 저장
         .password(encodedPassword)
         .name(request.getName())
-        .birthDate(birthDate) // ✅ 반드시 들어가야 함
+        .birthDate(birthDate) // 반드시 들어가야 함
         .phoneNumber(normalizedPhone)
         .address(request.getAddress())
+        .ci(request.getCi()) // CI값 추가
         .build();
 
     return userRepository.save(user);

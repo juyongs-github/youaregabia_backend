@@ -30,10 +30,12 @@ public class BoardController {
     
 
     @GetMapping("")
-    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,@RequestParam(required = false) String keyword) {
-        log.info("전체 조회 신청 {}", keyword);
+    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) String genre) {
+        log.info("전체 조회 신청 {},{}", keyword,genre);
         // 키워드는 필수가 아님
-        PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword);
+        PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword, genre);
         return result;
     }
 

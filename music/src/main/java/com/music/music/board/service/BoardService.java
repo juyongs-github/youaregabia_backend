@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.music.music.board.dto.BoardDto;
 import com.music.music.board.dto.ReplyResponseDto;
 import com.music.music.board.entity.Board;
+import com.music.music.board.entity.BoardGenre;
 import com.music.music.board.entity.BoardType;
 import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyLikeRepository;
@@ -37,7 +38,7 @@ public class BoardService {
     private final ReplyService replyService;
 
 
-    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto, String keyword) {
+    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto, String keyword, String genre) {
         log.info(" 요청 - page: {}, size: {}", dto.getPage(), dto.getSize());
         
         Page<Board> result = null;
@@ -47,10 +48,26 @@ public class BoardService {
         Sort.by("boardId").descending());
 
         // keyword가 있다면 검색, 없으면 전체 조회
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            result = boardRepository.findByTitleContaining(keyword.trim(), pageable);
+
+        if (genre != null && !genre.isBlank()) {
+
+            BoardGenre boardGenre = BoardGenre.valueOf(genre);
+
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                result = boardRepository.findByBoardGenreAndTitleContaining(
+                    boardGenre, keyword.trim(), pageable
+                );
+            } else {
+                result = boardRepository.findByBoardGenre(boardGenre, pageable);
+            }
+
         } else {
-            result = boardRepository.findAll(pageable);
+
+            if (keyword != null && !keyword.trim().isEmpty()) {
+                result = boardRepository.findByTitleContaining(keyword.trim(), pageable);
+            } else {
+                result = boardRepository.findAll(pageable);
+            }
         }
 
         List<BoardDto> dtoList = result.stream()
@@ -105,11 +122,11 @@ public class BoardService {
 
         Board board = Board.builder()
             .user(user)
-            .boardType(BoardType.PLAYLIST_SHARE)
+            .boardType(BoardType.valueOf(dto.getBoardType()))
+            .boardGenre(BoardGenre.valueOf(dto.getBoardGenre()))
             .title(dto.getTitle())
             .content(dto.getContent())
             .build();
-
         return boardRepository.save(board).getBoardId();
     }
 
@@ -123,7 +140,7 @@ public class BoardService {
         throw new IllegalStateException("게시글 수정 권한이 없습니다.");
         }
 
-        board.update(dto.getTitle(), dto.getContent());
+        board.update(dto.getTitle(), dto.getContent(),BoardGenre.valueOf(dto.getBoardGenre()));
     }
 
     @Transactional

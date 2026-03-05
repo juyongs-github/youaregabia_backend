@@ -47,6 +47,11 @@ public class Board extends BaseEntity{
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private BoardType boardType;
+    
+    // 게시글 장르
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private BoardGenre boardGenre;
 
     @Column(nullable = false, length = 100)
     private String title;
@@ -64,8 +69,9 @@ public class Board extends BaseEntity{
     @Builder.Default
     private List<Reply> replies = new ArrayList<>();
 
-    public void update(String title, String content) {
+    public void update(String title, String content, BoardGenre boardGenre) {
     this.title = title;
     this.content = content;
+    this.boardGenre = boardGenre;
 }
 }

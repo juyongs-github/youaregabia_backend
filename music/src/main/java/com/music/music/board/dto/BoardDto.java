@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.music.music.board.entity.Board;
+import com.music.music.board.entity.BoardGenre;
+import com.music.music.board.entity.BoardType;
 import com.music.music.common.dto.PageResultDTO;
 
 import lombok.AllArgsConstructor;
@@ -25,6 +27,8 @@ public class BoardDto {
     private String content;
     private String writer;
     private LocalDateTime createdAt;
+    private String boardGenre;
+    private String boardType;
     // reply 페이징을 위해서 PageResultDTO로 변경
     private PageResultDTO<ReplyResponseDto> replies;
 
@@ -36,6 +40,8 @@ public class BoardDto {
         ? board.getUser().getName()
         : "unknown";
         this.createdAt = board.getCreatedAt();
+        this.boardGenre = board.getBoardGenre().name();
+        this.boardType = board.getBoardType().name();
         this.replies = replies;
     }
     
@@ -45,6 +51,8 @@ public class BoardDto {
     this.title = board.getTitle();
     this.writer = board.getUser().getName();
     this.createdAt = board.getCreatedAt();
+    this.boardType = board.getBoardType().name();
+    this.boardGenre = board.getBoardGenre().name();
 }
     
 }

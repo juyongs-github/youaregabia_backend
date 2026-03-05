@@ -24,13 +24,13 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
     r.replyId,
     r.content,
     u.name,
-    coalesce(count(rl), 0),
-    coalesce(sum(case when rl.user.email = :email then 1 else 0 end), 0),
+    count(rl),
+    sum(case when rl.user.email = :email then 1 else 0 end),
     r.createdAt
     )
     from Reply r
     join r.user u
-    left join ReplyLike rl on rl.reply.replyId = r.replyId and rl.user.email = :email
+    left join ReplyLike rl on rl.reply.replyId = r.replyId
     where r.board.boardId = :boardId
     group by r.replyId, r.content, u.name, r.createdAt
     order by r.createdAt desc
@@ -46,13 +46,13 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
         r.replyId,
         r.content,
         u.name,
-        coalesce(count(rl), 0),
-        coalesce(sum(case when rl.user.email = :email then 1 else 0 end), 0),
+        count(rl),
+        sum(case when rl.user.email = :email then 1 else 0 end),
         r.createdAt
     )
     from Reply r
     join r.user u
-    left join ReplyLike rl on rl.reply.replyId = r.replyId and rl.user.email = :email
+    left join ReplyLike rl on rl.reply.replyId = r.replyId
     where r.board.boardId = :boardId
     group by r.replyId, r.content, u.name, r.createdAt
     order by count(rl) desc, r.createdAt desc

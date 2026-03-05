@@ -3,8 +3,8 @@ package com.music.music.board.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.music.music.board.common.dto.PageResultDTO;
 import com.music.music.board.entity.Board;
-import com.music.music.common.dto.PageResultDTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,18 +33,18 @@ public class BoardDto {
         this.title = board.getTitle();
         this.content = board.getContent();
         this.writer = board.getUser() != null
-        ? board.getUser().getName()
-        : "unknown";
+                ? board.getUser().getName()
+                : "unknown";
         this.createdAt = board.getCreatedAt();
         this.replies = replies;
     }
-    
+
     // 목록용 생성자 (댓글 없음)
     public BoardDto(Board board) {
-    this.boardId = board.getBoardId();
-    this.title = board.getTitle();
-    this.writer = board.getUser().getName();
-    this.createdAt = board.getCreatedAt();
-}
-    
+        this.boardId = board.getBoardId();
+        this.title = board.getTitle();
+        this.writer = board.getUser().getName();
+        this.createdAt = board.getCreatedAt();
+    }
+
 }

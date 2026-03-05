@@ -18,31 +18,30 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/community/share")
 public class ReplyController {
-    private final ReplyService replyService;
+  private final ReplyService replyService;
 
-    // 댓글 작성
-    @PostMapping("/{boardId}/replies")
-    public Long createReply(
-            @PathVariable Long boardId,
-            @RequestParam String email,
-            @RequestBody ReplyCreateDto dto) {
-        return replyService.createReply(boardId, email, dto);
-    }
+  // 댓글 작성
+  @PostMapping("/{boardId}/replies")
+  public Long createReply(
+      @PathVariable("boardId") Long boardId,
+      @RequestParam("email") String email,
+      @RequestBody ReplyCreateDto dto) {
+    return replyService.createReply(boardId, email, dto);
+  }
 
-    // 댓글 삭제
-    @DeleteMapping("/replies/{replyId}")
-    public void deleteReply(
-            @PathVariable Long replyId,
-            @RequestParam String email) {
-        replyService.deleteReply(replyId, email);
-    }
+  // 댓글 삭제
+  @DeleteMapping("/replies/{replyId}")
+  public void deleteReply(
+      @PathVariable("replyId") Long replyId,
+      @RequestParam("email") String email) {
+    replyService.deleteReply(replyId, email);
+  }
 
-    @PutMapping("/replies/{replyId}")
-    public void updateReply(
-        @PathVariable Long replyId,
-        @RequestParam String email,
-        @RequestBody ReplyCreateDto dto) {
-        replyService.updateReply(replyId, email, dto);
-    }
+  @PutMapping("/replies/{replyId}")
+  public void updateReply(
+      @PathVariable("replyId") Long replyId,
+      @RequestParam("email") String email,
+      @RequestBody ReplyCreateDto dto) {
+    replyService.updateReply(replyId, email, dto);
+  }
 }
-

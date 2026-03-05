@@ -16,33 +16,33 @@ import com.music.music.api.service.MusicApiService;
 
 @RestController
 public class MusicApiController {
-    private Logger logger = LoggerFactory.getLogger(MusicApiController.class);
+  private Logger logger = LoggerFactory.getLogger(MusicApiController.class);
 
-    @Autowired
-    MusicApiService musicApiService;
+  @Autowired
+  MusicApiService musicApiService;
 
-    @GetMapping("/api/init")
-    public ResponseEntity<String> saveInitialSongInfo() {
-        try {
-            musicApiService.saveInitialSongInfo();
-            return ResponseEntity.ok("초기 곡 정보 DB INSERT 완료");
-        } catch (Exception e) {
-            logger.error("[saveInitialSongInfo] 초기 곡 정보 DB INSERT 실패 - error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("초기 곡 정보 DB INSERT 실패");
-        }
+  @GetMapping("/api/init")
+  public ResponseEntity<String> saveInitialSongInfo() {
+    try {
+      musicApiService.saveInitialSongInfo();
+      return ResponseEntity.ok("초기 곡 정보 DB INSERT 완료");
+    } catch (Exception e) {
+      logger.error("[saveInitialSongInfo] 초기 곡 정보 DB INSERT 실패 - error: {}", e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body("초기 곡 정보 DB INSERT 실패");
     }
+  }
 
-    @GetMapping("/api/recommend")
-    public List<SongDTO> getRecommendSongList(
-        @RequestParam String trackName, 
-        @RequestParam String artistName) {
-        return musicApiService.getRecommendSongList(trackName, artistName);
-    }
+  @GetMapping("/api/recommend")
+  public List<SongDTO> getRecommendSongList(
+      @RequestParam("trackName") String trackName,
+      @RequestParam("artistName") String artistName) {
+    return musicApiService.getRecommendSongList(trackName, artistName);
+  }
 
-    @GetMapping("/api/search")
-    public List<SongDTO> getSearchSongList(
-        @RequestParam("q") String query) {
-        return musicApiService.getSearchSongList(query);
-    }
+  @GetMapping("/api/search")
+  public List<SongDTO> getSearchSongList(
+      @RequestParam("q") String query) {
+    return musicApiService.getSearchSongList(query);
+  }
 }

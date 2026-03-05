@@ -2,10 +2,12 @@ package com.music.music.auth.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.music.music.auth.dto.LoginRequest;
 import com.music.music.auth.dto.LoginResponse;
 import com.music.music.auth.dto.RegisterRequest;
+import com.music.music.auth.service.LocalFileUploader;
 import com.music.music.user.entitiy.User;
 import com.music.music.user.repository.UserRepository;
 import com.music.music.user.service.UserService;
@@ -13,12 +15,16 @@ import com.music.music.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 
 @RestController
 @RequiredArgsConstructor
@@ -26,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AuthController {
 
   private final UserService userService;
-
+  private final LocalFileUploader fileUploader;
   private final UserRepository userRepository;
 
   // 회원가입
@@ -60,6 +66,17 @@ public class AuthController {
   public boolean checkEmailDuplicate(@RequestParam("email") String email) {
     System.out.println("🔥 email-check called with: " + email);
     return userRepository.existsByEmail(email);
+  }
+
+  // 이미지 업로드
+  @PatchMapping("/update-image")
+  public ResponseEntity<Map<String, String>> updateImage(
+      @RequestParam("email") String email,
+      @RequestPart("image") MultipartFile image) {
+    String imageUrl = fileUploader.upload(image, "profile");
+    userService.updateProfileImage(email, imageUrl);
+
+    return ResponseEntity.ok(Map.of("imgUrl", imageUrl));
   }
 
 }

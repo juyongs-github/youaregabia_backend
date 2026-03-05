@@ -99,4 +99,8 @@ public class User {
   protected void onUpdate() {
     this.updatedAt = LocalDateTime.now();
   }
+
+  public void setImgUrl(String imgUrl) {
+    this.imgUrl = imgUrl;
+  }
 }

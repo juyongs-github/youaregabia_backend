@@ -121,4 +121,15 @@ public class UserService {
     return phone;
   }
 
+  @Transactional
+  public void updateProfileImage(String email, String imgUrl) {
+    // 1. 기존에 구현하신 normalizeEmail을 사용하여 유저를 찾습니다.
+    User user = userRepository.findByEmail(normalizeEmail(email))
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+    // 2. 찾아온 유저 엔티티의 imgUrl을 업데이트합니다.
+    user.setImgUrl(imgUrl);
+
+    // @Transactional 어노테이션 덕분에 메서드가 끝날 때 DB에 자동 저장됩니다.
+  }
 }

@@ -43,7 +43,8 @@ public class UserServiceTest {
         "테스트유저",
         "1996-03-03", // ✅ 추가
         "010-1234-5678",
-        "서울");
+        "서울",
+        "MOCK-CI-EXIST");
 
     // when
     User saved = userService.register(request);
@@ -62,6 +63,7 @@ public class UserServiceTest {
         .name("기존유저")
         .phoneNumber("010-1111-2222")
         .address("서울")
+        .ci("ajdktsj")
         .build());
 
     RegisterRequest request = new RegisterRequest(
@@ -70,7 +72,8 @@ public class UserServiceTest {
         "테스트유저",
         "1996-03-03", // ✅ 추가
         "010-1234-5678",
-        "서울");
+        "서울",
+        "MOCK-CI-EXIST");
 
     assertThatThrownBy(() -> userService.register(request))
         .isInstanceOf(IllegalStateException.class)
@@ -86,6 +89,7 @@ public class UserServiceTest {
         .name("테스트유저")
         .phoneNumber("010-1234-5678")
         .address("서울")
+        .ci("cafd")
         .build());
 
     LoginRequest request = new LoginRequest("test@test.com", "password123");

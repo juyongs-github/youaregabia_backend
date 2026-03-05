@@ -22,4 +22,11 @@ public class PageRequestDTO {
 
     private String keyword;
 
+     // 정렬 기준: latest | likes
+    private String sort;
+
+    public String getSort() {
+        return sort == null ? "latest" : sort;
+    }
+
 }

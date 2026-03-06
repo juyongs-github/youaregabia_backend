@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.music.music.board.common.entity.BaseEntity;
 import com.music.music.playlist.entity.constant.PlaylistType;
+import com.music.music.review.entity.Review;
 import com.music.music.user.entitiy.User;
 
 import jakarta.persistence.CascadeType;
@@ -26,7 +27,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Getter
-@ToString(exclude = "playlistSongs")
+@ToString(exclude = {"playlistSongs", "reviews"})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -55,6 +56,11 @@ public class Playlist extends BaseEntity {
     @Builder.Default
     @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlaylistSong> playlistSongs = new ArrayList<>();
+
+    // 플레이리스트 리뷰 추가
+    @Builder.Default
+    @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Review> reviews = new ArrayList<>();
 
     private String imageUrl;
 

@@ -65,13 +65,25 @@ public class Board extends BaseEntity{
     @Column(nullable = false)
     private int likeCount = 0;
 
+    // Soft Delete
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
     @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
     @Builder.Default
     private List<Reply> replies = new ArrayList<>();
+
+    public void delete() {
+        this.deleted = true;
+    }
 
     public void update(String title, String content, BoardGenre boardGenre) {
     this.title = title;
     this.content = content;
     this.boardGenre = boardGenre;
+    }
+    public void increaseViewCount() {
+    this.viewCount++;
 }
 }

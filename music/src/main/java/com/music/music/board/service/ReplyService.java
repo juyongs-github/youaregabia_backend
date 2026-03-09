@@ -39,11 +39,18 @@ public class ReplyService {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
+        
+        Reply parentReply = null;
+        if (dto.getParentReplyId() != null) {
+        parentReply = replyRepository.findById(dto.getParentReplyId())
+                .orElseThrow(() -> new IllegalArgumentException("부모 댓글이 존재하지 않습니다."));
+    }
 
         Reply reply = Reply.builder()
                 .board(board)
                 .user(user)
                 .content(dto.getContent())
+                .parentReply(parentReply)
                 .build();
 
         return replyRepository.save(reply).getReplyId();
@@ -58,11 +65,11 @@ public class ReplyService {
             throw new IllegalStateException("댓글 삭제 권한이 없습니다.");
         }
 
-        replyRepository.delete(reply);
+        reply.delete();
 
     }
     @Transactional
-public void updateReply(Long replyId, String email, ReplyCreateDto dto) {
+    public void updateReply(Long replyId, String email, ReplyCreateDto dto) {
 
     Reply reply = replyRepository.findById(replyId)
             .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));

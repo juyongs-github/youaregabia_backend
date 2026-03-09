@@ -29,7 +29,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @Service
 @AllArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class BoardService {
     private final BoardRepository boardRepository;
     private final ReplyRepository replyRepository;
@@ -47,43 +47,50 @@ public class BoardService {
         Pageable pageable = PageRequest.of(dto.getPage()-1, dto.getSize(),
         Sort.by("boardId").descending());
 
+        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
+        boolean hasGenre = genre != null && !genre.isBlank();
+
         // keyword가 있다면 검색, 없으면 전체 조회
 
-        if (genre != null && !genre.isBlank()) {
+        if (hasGenre) {
 
-            BoardGenre boardGenre = BoardGenre.valueOf(genre);
+        BoardGenre boardGenre = BoardGenre.valueOf(genre);
 
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                result = boardRepository.findByBoardGenreAndTitleContaining(
-                    boardGenre, keyword.trim(), pageable
-                );
-            } else {
-                result = boardRepository.findByBoardGenre(boardGenre, pageable);
-            }
-
+        if (hasKeyword) {
+            result = boardRepository
+                    .findByDeletedFalseAndBoardGenreAndTitleContaining(
+                            boardGenre, keyword.trim(), pageable);
         } else {
-
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                result = boardRepository.findByTitleContaining(keyword.trim(), pageable);
-            } else {
-                result = boardRepository.findAll(pageable);
-            }
+            result = boardRepository
+                    .findByDeletedFalseAndBoardGenre(boardGenre, pageable);
         }
 
-        List<BoardDto> dtoList = result.stream()
-            .map(BoardDto::new)  // 댓글 없는 생성자 사용
-            .toList();
+        } else {    
 
-        return PageResultDTO.<BoardDto>withAll()
-                .dtoList(dtoList)
-                .totalCount(result.getTotalElements())
-                .pageRequestDTO(dto)
-                .build();
+        if (hasKeyword) {
+            result = boardRepository
+                    .findByDeletedFalseAndTitleContaining(keyword.trim(), pageable);
+        } else {
+            result = boardRepository
+                    .findByDeletedFalse(pageable);
+        }
     }
 
+    List<BoardDto> dtoList = result.stream()
+            .map(BoardDto::new)
+            .toList();
+
+    return PageResultDTO.<BoardDto>withAll()
+            .dtoList(dtoList)
+            .totalCount(result.getTotalElements())
+            .pageRequestDTO(dto)
+            .build();
+    }
+    
+    @Transactional
     public BoardDto getBoardDetail(Long boardId, String email, PageRequestDTO dto) {
 
-        Board board = boardRepository.findById(boardId)
+        Board board = boardRepository.findByBoardIdAndDeletedFalse(boardId)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
         
         // email이 비어있거나 null이면 익명 사용자 처리
@@ -96,24 +103,34 @@ public class BoardService {
             dto.getSize());
 
         Page<ReplyResponseDto> replyPage;
-            
-        if ("likes".equals(dto.getSort())) {
-            replyPage = replyRepository.findRepliesWithLikeInfo(boardId, userEmail, pageable);
-        } else {
-            replyPage = replyRepository.findRepliesLatest(boardId, userEmail, pageable);
-        }
+        
+    if ("likes".equals(dto.getSort())) {
+        replyPage = replyRepository.findRepliesWithLikeInfo(boardId, userEmail, pageable);
+    } else {
+        replyPage = replyRepository.findRepliesLatest(boardId, userEmail, pageable);
+    }
+
+        // 기존 replyPage 가져온 후
+        List<ReplyResponseDto> dtoList = replyPage.getContent().stream()
+            .map(reply -> {
+                List<ReplyResponseDto> children = 
+                    replyRepository.findChildren(reply.getReplyId(), userEmail);
+                reply.setChildren(children);
+                return reply;
+                })
+        .toList();
         
         PageResultDTO<ReplyResponseDto> replies = PageResultDTO.<ReplyResponseDto>withAll()
-                .dtoList(replyPage.getContent())
+                .dtoList(dtoList)
                 .totalCount(replyPage.getTotalElements())
                 .pageRequestDTO(dto)
                 .build();
-
+         board.increaseViewCount();
         return new BoardDto(board, replies);
     }
 
 
-
+    
     @Transactional
     public Long createBoard(String email, BoardDto dto) {
 
@@ -133,7 +150,7 @@ public class BoardService {
     @Transactional
     public void updateBoard(Long boardId, String email, BoardDto dto) {
 
-        Board board = boardRepository.findById(boardId)
+        Board board = boardRepository.findByBoardIdAndDeletedFalse(boardId)
             .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
         if (!board.getUser().getEmail().equals(email)) {
@@ -146,13 +163,13 @@ public class BoardService {
     @Transactional
     public void deleteBoard(Long boardId, String email) {
 
-        Board board = boardRepository.findById(boardId)
+        Board board = boardRepository.findByBoardIdAndDeletedFalse(boardId)
             .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
         if (!board.getUser().getEmail().equals(email)) {
         throw new IllegalStateException("게시글 삭제 권한이 없습니다.");
         }
 
-        boardRepository.delete(board);
+        board.delete();
     }
 }

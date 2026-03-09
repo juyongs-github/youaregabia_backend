@@ -48,20 +48,20 @@ public class BoardController {
     }
 
     @PostMapping("/add")
-    public Long createBoard(@RequestParam String email,@RequestBody BoardDto dto) {
+    public Long createBoard(@RequestParam("email") String email,@RequestBody BoardDto dto) {
         log.info("게시글 생성 {}", dto);
         return boardService.createBoard(email, dto);
     }
 
     @PutMapping("update/{boardId}")
     public void updateBoard(
-        @PathVariable Long boardId,@RequestParam String email,@RequestBody BoardDto dto) {
+        @PathVariable Long boardId,@RequestParam("email") String email,@RequestBody BoardDto dto) {
         log.info("게시글 수정 {}", dto);
         boardService.updateBoard(boardId, email, dto);
     }
 
     @DeleteMapping("delete/{boardId}")
-    public void deleteBoard(@PathVariable Long boardId,@RequestParam String email) {
+    public void deleteBoard(@PathVariable Long boardId,@RequestParam("email") String email) {
         log.info("게시글 삭제 {}", boardId);
         boardService.deleteBoard(boardId, email);
     }

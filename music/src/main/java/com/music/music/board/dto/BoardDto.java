@@ -29,6 +29,7 @@ public class BoardDto {
     private LocalDateTime createdAt;
     private String boardGenre;
     private String boardType;
+    private int viewCount;
     // reply 페이징을 위해서 PageResultDTO로 변경
     private PageResultDTO<ReplyResponseDto> replies;
 
@@ -43,6 +44,7 @@ public class BoardDto {
         this.boardGenre = board.getBoardGenre().name();
         this.boardType = board.getBoardType().name();
         this.replies = replies;
+        this.viewCount = board.getViewCount();
     }
     
     // 목록용 생성자 (댓글 없음)
@@ -53,6 +55,7 @@ public class BoardDto {
     this.createdAt = board.getCreatedAt();
     this.boardType = board.getBoardType().name();
     this.boardGenre = board.getBoardGenre().name();
+    this.viewCount = board.getViewCount();
 }
     
 }

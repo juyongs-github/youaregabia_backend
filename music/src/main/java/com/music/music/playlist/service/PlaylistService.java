@@ -66,6 +66,10 @@ public class PlaylistService {
         // .imageUrl(imageUrl)
         // .build();
 
+        if (playlistRepository.existsByUserIdAndTitle(user.getId(), title)) {
+            throw new IllegalArgumentException("같은 제목의 플레이리스트가 이미 존재합니다.");
+        }
+
         String imageUrl;
 
         if (file != null && !file.isEmpty()) {

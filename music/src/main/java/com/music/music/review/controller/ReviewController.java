@@ -1,6 +1,7 @@
 package com.music.music.review.controller;
 
 import com.music.music.review.dto.ReviewDto;
+import com.music.music.review.dto.ReviewRequestDto;
 import com.music.music.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,28 +17,38 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping
-    public ResponseEntity<ReviewDto> createReview(@RequestBody CreateReviewRequest request) {
+    public ResponseEntity<ReviewDto> createReview(@RequestBody ReviewRequestDto request) {
         ReviewDto review = reviewService.createReview(request.getPlaylistId(), request.getUserEmail(), request.getContent(), request.getRating());
         return ResponseEntity.status(201).body(review);
     }
 
-    @GetMapping("/{playlistId}")
-    public ResponseEntity<List<ReviewDto>> getReviewsByPlaylist(@PathVariable Long playlistId) {
+    @GetMapping("/all")
+    public ResponseEntity<List<ReviewDto>> getAllReviews() {
+        List<ReviewDto> reviews = reviewService.getAllReviews();
+        return ResponseEntity.ok(reviews);
+    }
+
+    @GetMapping("/playlist/{playlistId}")
+    public ResponseEntity<List<ReviewDto>> getReviewsByPlaylist(@PathVariable(name = "playlistId") Long playlistId) {
         List<ReviewDto> reviews = reviewService.getReviewsByPlaylist(playlistId);
         return ResponseEntity.ok(reviews);
     }
 
-    @GetMapping("/{userEmail}")
-    public ResponseEntity<List<ReviewDto>> getReviewsByUser(@PathVariable String userEmail) {
-        List<ReviewDto> reviews = reviewService.getReviewsByUser(userEmail);
+    @GetMapping("/user/{email}")
+    public ResponseEntity<List<ReviewDto>> getReviewsByUser(@PathVariable(name = "email") String email) {
+        List<ReviewDto> reviews = reviewService.getReviewsByUser(email);
         return ResponseEntity.ok(reviews);
     }
 
     @PutMapping("/{reviewId}")
     public ResponseEntity<ReviewDto> updateReview(
             @PathVariable Long reviewId,
-            @RequestBody UpdateReviewRequest request) {
-        ReviewDto review = reviewService.updateReview(reviewId, request.getContent(), request.getRating());
+            @RequestBody ReviewRequestDto request) {
+        Integer rating = null;
+        if (request.getRating() != null) {
+            rating = request.getRating();
+        }
+        ReviewDto review = reviewService.updateReview(reviewId, request.getContent(), rating);
         return ResponseEntity.ok(review);
     }
 
@@ -45,32 +56,5 @@ public class ReviewController {
     public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
         reviewService.deleteReview(reviewId);
         return ResponseEntity.noContent().build();
-    }
-
-    // Inner classes for request DTOs
-    public static class CreateReviewRequest {
-        private Long playlistId;
-        private String userEmail;
-        private Integer rating;
-        private String content;
-
-        public Long getPlaylistId() { return playlistId; }
-        public void setPlaylistId(Long playlistId) { this.playlistId = playlistId; }
-        public String getUserEmail() { return userEmail; }
-        public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
-        public String getContent() { return content; }
-        public void setContent(String content) { this.content = content; }
-        public Integer getRating() { return rating; }
-        public void setRating(Integer rating) { this.rating = rating; }
-    }
-
-    public static class UpdateReviewRequest {
-        private String content;
-        private Integer rating;
-
-        public String getContent() { return content; }
-        public void setContent(String content) { this.content = content; }
-        public Integer getRating() { return rating; }
-        public void setRating(Integer rating) { this.rating = rating; }
     }
 }

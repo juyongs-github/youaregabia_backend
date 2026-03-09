@@ -9,4 +9,6 @@ import com.music.music.playlist.entity.Playlist;
 
 public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 
+    boolean existsByUserIdAndTitle(Long userId, String title);
+
 }

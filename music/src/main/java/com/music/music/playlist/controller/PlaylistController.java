@@ -40,16 +40,19 @@ public class PlaylistController {
   // playlist_song 테이블 매핑 될 수 있도록 수정
   @PostMapping
   public ResponseEntity<PlaylistDTO> createPlaylist(
+      @RequestParam(name = "email") String email,
       @RequestPart(name = "file", required = false) MultipartFile file,
       @RequestParam(name = "title") String title,
       @RequestParam(name = "description") String description,
       @RequestParam(name = "songIds", required = false) List<Long> songIds) {
-    User user = userRepository.findById(1L).orElseThrow(() -> new IllegalStateException("해당 유저 없음"));
-    PlaylistDTO playlistDTO = playlistService.createPlaylist(file, title, description, songIds, user);
-    return ResponseEntity.ok(playlistDTO);
+    User user = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("해당 유저 없음"));
+    try {
+      PlaylistDTO playlistDTO = playlistService.createPlaylist(file, title, description, songIds, user);
+      return ResponseEntity.ok(playlistDTO);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(409).build(); // 플레이리스트 제목 중복 시
+    }
   }
-
-  // 수정한 부분
 
   // 플레이리스트 상세 조회 (/playlist/{id} + GET)
   @GetMapping("/{id}")

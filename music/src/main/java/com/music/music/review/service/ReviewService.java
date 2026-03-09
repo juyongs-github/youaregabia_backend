@@ -50,6 +50,12 @@ public class ReviewService {
         return modelMapper.map(savedReview, ReviewDto.class);
     }
 
+    public List<ReviewDto> getAllReviews() {
+        return reviewRepository.findAll().stream()
+                .map(review -> modelMapper.map(review, ReviewDto.class))
+                .toList();
+    }
+
     public List<ReviewDto> getReviewsByPlaylist(Long playlistId) {
         List<Review> reviews = reviewRepository.findByPlaylistId(playlistId);
 

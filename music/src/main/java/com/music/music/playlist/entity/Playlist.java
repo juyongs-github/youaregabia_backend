@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.music.music.board.common.entity.BaseEntity;
 import com.music.music.playlist.entity.constant.PlaylistType;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -33,54 +33,54 @@ import lombok.ToString;
 @Entity
 public class Playlist extends BaseEntity {
 
-    // 공통
+  // 공통
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
-    private User user;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_id")
+  private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private PlaylistType type;
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private PlaylistType type;
 
-    @Column(nullable = false)
-    private String title;
+  @Column(nullable = false)
+  private String title;
 
-    private String description;
+  private String description;
 
-    @Builder.Default
-    @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PlaylistSong> playlistSongs = new ArrayList<>();
+  @Builder.Default
+  @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<PlaylistSong> playlistSongs = new ArrayList<>();
 
-    private String imageUrl;
+  private String imageUrl;
 
-    // 선택사항 (공동 플레이리스트 제작 시 필요)
-    private String genre;
+  // 선택사항 (공동 플레이리스트 제작 시 필요)
+  private String genre;
 
-    // 곡 추가 메서드
-    public void addSong(Song song) {
-        PlaylistSong playlistSong = PlaylistSong.builder()
-                .playlist(this)
-                .song(song)
-                .build();
+  // 곡 추가 메서드
+  public void addSong(Song song) {
+    PlaylistSong playlistSong = PlaylistSong.builder()
+        .playlist(this)
+        .song(song)
+        .build();
 
-        playlistSongs.add(playlistSong);
-    }
+    playlistSongs.add(playlistSong);
+  }
 
-    // 수정 메서드
-    public void changeTitle(String title) {
-        this.title = title;
-    }
+  // 수정 메서드
+  public void changeTitle(String title) {
+    this.title = title;
+  }
 
-    public void changeDescription(String description) {
-        this.description = description;
-    }
+  public void changeDescription(String description) {
+    this.description = description;
+  }
 
-    public void changeImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
+  public void changeImageUrl(String imageUrl) {
+    this.imageUrl = imageUrl;
+  }
 }

@@ -10,7 +10,7 @@
 // import com.music.music.board.entity.Reply;
 // import com.music.music.board.repository.BoardRepository;
 // import com.music.music.board.repository.ReplyRepository;
-// import com.music.music.user.entitiy.User;
+// import com.music.music.user.entity.User;
 // import com.music.music.user.repository.UserRepository;
 
 // @Disabled

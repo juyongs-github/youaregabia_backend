@@ -6,13 +6,30 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import net.nurigo.sdk.NurigoApp;
+import net.nurigo.sdk.message.model.Message;
+import net.nurigo.sdk.message.request.SingleMessageSendingRequest;
+import net.nurigo.sdk.message.service.DefaultMessageService;
 
 @Service
 public class SmsVerificationService {
 
   private static final long EXPIRE_SECONDS = 180; // 3분
   private static final SecureRandom random = new SecureRandom();
+
+  private final DefaultMessageService messageService;
+  private final String fromNumber;
+
+  public SmsVerificationService(
+      @Value("${coolsms.api.key}") String apiKey,
+      @Value("${coolsms.api.secret}") String apiSecret,
+      @Value("${coolsms.from.number}") String fromNumber) {
+    this.messageService = NurigoApp.INSTANCE.initialize(apiKey, apiSecret, "https://api.coolsms.co.kr");
+    this.fromNumber = fromNumber;
+  }
 
   /**
    * key: phoneNumber(normalized)
@@ -21,7 +38,7 @@ public class SmsVerificationService {
   private final Map<String, VerificationData> store = new ConcurrentHashMap<>();
 
   /**
-   * ✅ SMS 인증 완료된 번호 저장소
+   * SMS 인증 완료된 번호 저장소
    * - CI 발급은 이 verified를 통과한 번호만 가능
    */
   private final Set<String> verified = ConcurrentHashMap.newKeySet();
@@ -34,10 +51,13 @@ public class SmsVerificationService {
 
     store.put(phone, new VerificationData(code, expireAt));
 
-    // Mock이므로 서버 로그에 찍는다 (실서비스 절대 금지)
-    System.out.println("[MOCK-SMS] phone=" + phone + ", code=" + code + ", expireAt=" + expireAt);
+    Message message = new Message();
+    message.setFrom(fromNumber);
+    message.setTo(phone);
+    message.setText("[Gabia Music] 인증번호: " + code + " (3분 이내 입력)");
+    messageService.sendOne(new SingleMessageSendingRequest(message));
 
-    return new SmsSendResult(true, "인증번호가 발송되었습니다.", code);
+    return new SmsSendResult(true, "인증번호가 발송되었습니다.", null);
   }
 
   public VerifyResult verifyCode(String rawPhoneNumber, String inputCode) {

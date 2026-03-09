@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.music.music.board.common.entity.BaseEntity;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -34,38 +34,38 @@ import lombok.ToString;
 @Table(name = "board")
 public class Board extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long boardId;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long boardId;
 
-    // 작성자
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  // 작성자
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    // 게시글 타입
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private BoardType boardType;
+  // 게시글 타입
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 30)
+  private BoardType boardType;
 
-    @Column(nullable = false, length = 100)
-    private String title;
+  @Column(nullable = false, length = 100)
+  private String title;
 
-    @Column(nullable = false)
-    private String content;
+  @Column(nullable = false)
+  private String content;
 
-    @Column(nullable = false)
-    private int viewCount = 0;
+  @Column(nullable = false)
+  private int viewCount = 0;
 
-    @Column(nullable = false)
-    private int likeCount = 0;
+  @Column(nullable = false)
+  private int likeCount = 0;
 
-    @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    @Builder.Default
-    private List<Reply> replies = new ArrayList<>();
+  @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @Builder.Default
+  private List<Reply> replies = new ArrayList<>();
 
-    public void update(String title, String content) {
-        this.title = title;
-        this.content = content;
-    }
+  public void update(String title, String content) {
+    this.title = title;
+    this.content = content;
+  }
 }

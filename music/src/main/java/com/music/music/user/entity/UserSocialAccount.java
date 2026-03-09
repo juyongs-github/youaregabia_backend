@@ -1,4 +1,4 @@
-package com.music.music.user.entitiy;
+package com.music.music.user.entity;
 
 import java.time.LocalDateTime;
 

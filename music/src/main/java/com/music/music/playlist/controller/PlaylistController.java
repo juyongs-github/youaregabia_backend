@@ -6,7 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.service.PlaylistService;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;

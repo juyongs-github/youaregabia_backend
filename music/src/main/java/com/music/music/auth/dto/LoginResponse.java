@@ -13,4 +13,5 @@ public class LoginResponse {
   private String email;
   private String name;
   private LocalDateTime createdAt;
+  private String imgUrl;
 }

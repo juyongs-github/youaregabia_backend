@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.music.music.board.common.entity.BaseEntity;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -30,31 +30,31 @@ import lombok.ToString;
 @Entity
 public class Reply extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long replyId;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long replyId;
 
-    // 어떤 게시글의 댓글인지
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", nullable = false)
-    private Board board;
+  // 어떤 게시글의 댓글인지
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "board_id", nullable = false)
+  private Board board;
 
-    // 댓글 작성자
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  // 댓글 작성자
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    @Column(nullable = false, length = 500)
-    private String content;
+  @Column(nullable = false, length = 500)
+  private String content;
 
-    @Column(nullable = false)
-    private int likeCount = 0;
+  @Column(nullable = false)
+  private int likeCount = 0;
 
-    @OneToMany(mappedBy = "reply", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    @Builder.Default
-    private List<ReplyLike> replyLikes = new ArrayList<>();
+  @OneToMany(mappedBy = "reply", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @Builder.Default
+  private List<ReplyLike> replyLikes = new ArrayList<>();
 
-    public void updateContent(String content) {
-        this.content = content;
-    }
+  public void updateContent(String content) {
+    this.content = content;
+  }
 }

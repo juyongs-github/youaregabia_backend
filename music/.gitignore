@@ -41,3 +41,6 @@ gradle.properties
 
 ### Upload Files ###
 /uploads/
+
+### Secrets ###
+src/main/resources/application.properties

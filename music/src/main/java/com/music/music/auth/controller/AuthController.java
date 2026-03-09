@@ -8,7 +8,7 @@ import com.music.music.auth.dto.LoginRequest;
 import com.music.music.auth.dto.LoginResponse;
 import com.music.music.auth.dto.RegisterRequest;
 import com.music.music.auth.service.LocalFileUploader;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 import com.music.music.user.service.UserService;
 
@@ -55,6 +55,7 @@ public class AuthController {
         .email(user.getEmail())
         .name(user.getName()) // User 엔티티의 name 필드
         .createdAt(user.getCreatedAt()) // User 엔티티의 createdAt 필드
+        .imgUrl(user.getImgUrl())
         .build();
 
     // 3. 데이터를 담아서 200 OK 응답을 보냅니다.

@@ -25,4 +25,8 @@ public class SongDTO {
 
     @SerializedName("primaryGenreName")
     private String genreName; // 곡 장르
+
+    // * 수정한 부분 *
+    private Long playlistSongId;
+
 }

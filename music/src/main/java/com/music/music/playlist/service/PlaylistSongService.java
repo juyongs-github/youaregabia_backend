@@ -58,13 +58,17 @@ public class PlaylistSongService {
     public List<SongDTO> getSongsByPlaylist(Long playlistId) {
         return playlistSongRepository.findByPlaylistIdWithSong(playlistId)
                 .stream()
-                .map(ps -> toSongDto(ps.getSong()))
+                .map(ps -> toSongDto(ps))
                 .toList();
     }
 
     // Song → DTO
-    private SongDTO toSongDto(Song song) {
+    private SongDTO toSongDto(PlaylistSong ps) {
+
+        Song song = ps.getSong();
+
         return SongDTO.builder()
+                .playlistSongId(ps.getId()) // *
                 .id(song.getId())
                 .trackName(song.getTrackName())
                 .artistName(song.getArtistName())

@@ -10,7 +10,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.music.music.auth.jwt.JwtAuthFilter;
 import com.music.music.auth.oauth2.CustomOAuth2AuthorizationRequestResolver;
 import com.music.music.auth.oauth2.OAuth2SuccessHandler;
 
@@ -23,6 +25,7 @@ public class SecurityConfig {
 
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final CustomOAuth2AuthorizationRequestResolver customOAuth2AuthorizationRequestResolver;
+    private final JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -44,7 +47,8 @@ public class SecurityConfig {
         .oauth2Login(oauth2 -> oauth2
             .authorizationEndpoint(endpoint -> endpoint
                 .authorizationRequestResolver(customOAuth2AuthorizationRequestResolver))
-            .successHandler(oAuth2SuccessHandler));
+            .successHandler(oAuth2SuccessHandler))
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
       return http.build();
     }
@@ -53,14 +57,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-	// @Bean // 로그인 유저 정보 초기 세팅
-	// public UserDetailsService userDetailsService(PasswordEncoder encoder) {
-	// 	String password = encoder.encode("1234");
-	// 	UserDetails user = User.withUsername("admin")
-    //         .password(password)
-    //         .roles("USER")
-    //         .build();
-	// 	return new InMemoryUserDetailsManager(user);
-	// }
 }

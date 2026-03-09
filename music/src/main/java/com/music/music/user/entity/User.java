@@ -103,4 +103,8 @@ public class User {
   public void setImgUrl(String imgUrl) {
     this.imgUrl = imgUrl;
   }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
 }

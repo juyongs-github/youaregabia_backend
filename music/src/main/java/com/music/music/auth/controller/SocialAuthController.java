@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.music.music.auth.dto.LoginResponse;
 import com.music.music.auth.dto.SocialRegisterRequest;
+import com.music.music.auth.jwt.JwtUtil;
 import com.music.music.auth.oauth2.OAuth2UserInfo;
 import com.music.music.auth.oauth2.PendingSocialStore;
 import com.music.music.user.entity.User;
@@ -21,10 +22,10 @@ public class SocialAuthController {
   private final PendingSocialStore pendingSocialStore;
   private final UserService userService;
   private final UserRepository userRepository;
+  private final JwtUtil jwtUtil;
 
   /**
    * 기존 소셜 유저 로그인 완료 처리
-   * OAuth2 성공 후 프론트가 토큰으로 유저 정보를 받아감
    */
   @GetMapping("/session")
   public ResponseEntity<LoginResponse> session(@RequestParam String token) {
@@ -38,11 +39,14 @@ public class SocialAuthController {
       return ResponseEntity.badRequest().build();
     }
 
+    String jwtToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getName());
+
     LoginResponse response = LoginResponse.builder()
         .email(user.getEmail())
         .name(user.getName())
         .createdAt(user.getCreatedAt())
         .imgUrl(user.getImgUrl())
+        .token(jwtToken)
         .build();
 
     return ResponseEntity.ok(response);
@@ -60,11 +64,14 @@ public class SocialAuthController {
 
     User user = userService.linkSocialUser(request.ci(), pendingInfo);
 
+    String jwtToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getName());
+
     LoginResponse response = LoginResponse.builder()
         .email(user.getEmail())
         .name(user.getName())
         .createdAt(user.getCreatedAt())
         .imgUrl(user.getImgUrl())
+        .token(jwtToken)
         .build();
 
     return ResponseEntity.ok(response);
@@ -72,7 +79,6 @@ public class SocialAuthController {
 
   /**
    * 신규 소셜 유저 회원가입 완료 처리
-   * 본인인증(CI) 완료 후 호출
    */
   @PostMapping("/register")
   public ResponseEntity<LoginResponse> register(@RequestBody SocialRegisterRequest request) {
@@ -83,11 +89,14 @@ public class SocialAuthController {
 
     User user = userService.registerSocialUser(request, pendingInfo);
 
+    String jwtToken = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getName());
+
     LoginResponse response = LoginResponse.builder()
         .email(user.getEmail())
         .name(user.getName())
         .createdAt(user.getCreatedAt())
         .imgUrl(user.getImgUrl())
+        .token(jwtToken)
         .build();
 
     return ResponseEntity.ok(response);

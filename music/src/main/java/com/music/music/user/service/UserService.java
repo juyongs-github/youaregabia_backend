@@ -177,6 +177,41 @@ public class UserService {
   }
 
   @Transactional
+  public void deleteUser(String email) {
+    String normalizedEmail = normalizeEmail(email);
+    User user = userRepository.findByEmail(normalizedEmail)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+    userRepository.delete(user);
+  }
+
+  @Transactional(readOnly = true)
+  public String findEmail(String name, String phoneNumber) {
+    String normalizedPhone = normalizePhone(phoneNumber);
+    User user = userRepository.findByNameAndPhoneNumber(name, normalizedPhone)
+        .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
+    return maskEmail(user.getEmail());
+  }
+
+  @Transactional
+  public void resetPassword(String email, String phoneNumber, String newPassword) {
+    String normalizedEmail = normalizeEmail(email);
+    String normalizedPhone = normalizePhone(phoneNumber);
+    User user = userRepository.findByEmailAndPhoneNumber(normalizedEmail, normalizedPhone)
+        .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
+    user.setPassword(passwordEncoder.encode(newPassword));
+  }
+
+  private String maskEmail(String email) {
+    int atIdx = email.indexOf('@');
+    if (atIdx <= 2) return email;
+    String local = email.substring(0, atIdx);
+    String domain = email.substring(atIdx);
+    String visible = local.substring(0, 2);
+    String masked = "*".repeat(local.length() - 2);
+    return visible + masked + domain;
+  }
+
+  @Transactional
   public void updateProfileImage(String email, String imgUrl) {
     // 1. 기존에 구현하신 normalizeEmail을 사용하여 유저를 찾습니다.
     User user = userRepository.findByEmail(normalizeEmail(email))

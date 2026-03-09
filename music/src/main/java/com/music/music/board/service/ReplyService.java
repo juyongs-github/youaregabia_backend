@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import com.music.music.board.dto.ReplyCreateDto;
 import com.music.music.board.dto.ReplyResponseDto;
 import com.music.music.board.entity.Board;
@@ -13,7 +12,7 @@ import com.music.music.board.entity.Reply;
 import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,11 +25,6 @@ public class ReplyService {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final ReplyLikeRepository replyLikeRepository;
-
-    
-
-
-    
 
     public Long createReply(Long boardId, String email, ReplyCreateDto dto) {
 
@@ -61,17 +55,17 @@ public class ReplyService {
         replyRepository.delete(reply);
 
     }
+
     @Transactional
-public void updateReply(Long replyId, String email, ReplyCreateDto dto) {
+    public void updateReply(Long replyId, String email, ReplyCreateDto dto) {
 
-    Reply reply = replyRepository.findById(replyId)
-            .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
 
-    if (!reply.getUser().getEmail().equals(email)) {
-        throw new IllegalStateException("댓글 수정 권한이 없습니다.");
+        if (!reply.getUser().getEmail().equals(email)) {
+            throw new IllegalStateException("댓글 수정 권한이 없습니다.");
+        }
+
+        reply.updateContent(dto.getContent());
     }
-
-    reply.updateContent(dto.getContent());
 }
-}
-

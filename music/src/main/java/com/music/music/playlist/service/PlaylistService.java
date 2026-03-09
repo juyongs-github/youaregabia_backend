@@ -15,7 +15,7 @@ import com.music.music.playlist.entity.Playlist;
 import com.music.music.playlist.entity.Song;
 import com.music.music.playlist.entity.constant.PlaylistType;
 import com.music.music.playlist.repository.PlaylistRepository;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 
 import lombok.RequiredArgsConstructor;
 
@@ -103,9 +103,9 @@ public class PlaylistService {
 
     // 플레이리스트 단건 조회
     @Transactional(readOnly = true)
-    public PlaylistDTO getPlaylist(Long id) {
+    public PlaylistDTO getPlaylist(Long playlistId, Long userId) {
 
-        Playlist playlist = playlistRepository.findById(id)
+        Playlist playlist = playlistRepository.findByIdAndUserId(playlistId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("플레이리스트를 찾을 수 없습니다."));
 
         return toDto(playlist);
@@ -113,8 +113,9 @@ public class PlaylistService {
 
     // 플레이리스트 전체 목록 조회
     @Transactional(readOnly = true)
-    public List<PlaylistDTO> getAllPlaylists() {
-        return playlistRepository.findAll()
+    public List<PlaylistDTO> getAllPlaylists(Long userId) {
+
+        return playlistRepository.findAllByUserId(userId)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -125,7 +126,7 @@ public class PlaylistService {
      * UPDATE
      * =========================
      */
-    public PlaylistDTO updatePlaylist(Long id, PlaylistDTO dto) {
+    public PlaylistDTO updatePlaylist(Long id, PlaylistDTO dto, MultipartFile file) {
 
         Playlist playlist = playlistRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("플레이리스트를 찾을 수 없습니다."));
@@ -136,9 +137,14 @@ public class PlaylistService {
         if (dto.getDescription() != null) {
             playlist.changeDescription(dto.getDescription());
         }
-        if (dto.getImageUrl() != null) {
-            playlist.changeImageUrl(dto.getImageUrl());
+        if (file != null && !file.isEmpty()) {
+
+            String imageUrl = fileService.upload(file);
+
+            playlist.changeImageUrl(imageUrl);
         }
+
+        playlistRepository.save(playlist);
 
         return toDto(playlist);
     }

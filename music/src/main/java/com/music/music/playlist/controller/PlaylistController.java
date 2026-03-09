@@ -6,7 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.service.PlaylistService;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -33,18 +33,21 @@ public class PlaylistController {
 
   // 플레이리스트 전체 조회 (/playlist/all + GET)
   @GetMapping("/all")
-  public List<PlaylistDTO> getAllPlaylists() {
-    return playlistService.getAllPlaylists();
+  public List<PlaylistDTO> getAllPlaylists(@RequestParam("email") String email) {
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalStateException("유저 없음"));
+    return playlistService.getAllPlaylists(user.getId());
   }
 
   // playlist_song 테이블 매핑 될 수 있도록 수정
   @PostMapping
   public ResponseEntity<PlaylistDTO> createPlaylist(
+      @RequestParam("email") String email,
       @RequestPart(name = "file", required = false) MultipartFile file,
       @RequestParam(name = "title") String title,
       @RequestParam(name = "description") String description,
       @RequestParam(name = "songIds", required = false) List<Long> songIds) {
-    User user = userRepository.findById(1L).orElseThrow(() -> new IllegalStateException("해당 유저 없음"));
+    User user = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("유저 없음"));
     PlaylistDTO playlistDTO = playlistService.createPlaylist(file, title, description, songIds, user);
     return ResponseEntity.ok(playlistDTO);
   }
@@ -53,16 +56,20 @@ public class PlaylistController {
 
   // 플레이리스트 상세 조회 (/playlist/{id} + GET)
   @GetMapping("/{id}")
-  public PlaylistDTO getPlaylist(@PathVariable("id") Long id) {
-
-    return playlistService.getPlaylist(id);
+  public PlaylistDTO getPlaylist(@PathVariable("id") Long id, @RequestParam("email") String email) {
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalStateException("유저 없음"));
+    return playlistService.getPlaylist(id, user.getId());
   }
 
   // 플레이리스트 수정 (/playlist/{id} + PUT)
-  @PutMapping("/{id}")
-  public PlaylistDTO putPlaylist(@PathVariable("id") Long id, @RequestBody PlaylistDTO dto) {
+  @PutMapping(value = "/{id}", consumes = "multipart/form-data")
+  public PlaylistDTO updatePlaylist(
+      @PathVariable("id") Long id,
+      @RequestPart("dto") PlaylistDTO dto,
+      @RequestPart(value = "file", required = false) MultipartFile file) {
 
-    return playlistService.updatePlaylist(id, dto);
+    return playlistService.updatePlaylist(id, dto, file);
   }
 
   // 플레이리스트 삭제 (/playlist/{id} + DELETE)

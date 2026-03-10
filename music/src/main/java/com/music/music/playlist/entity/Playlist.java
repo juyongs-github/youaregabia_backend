@@ -6,7 +6,7 @@ import java.util.List;
 import com.music.music.board.common.entity.BaseEntity;
 import com.music.music.playlist.entity.constant.PlaylistType;
 import com.music.music.review.entity.Review;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

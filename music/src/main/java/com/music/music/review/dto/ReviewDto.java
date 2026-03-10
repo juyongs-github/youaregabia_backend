@@ -15,6 +15,8 @@ public class ReviewDto {
 
     private Long id;
     private Long playlistId;
+    private String playlistTitle;
+    private String imageUrl;
     private Long userId;
     private String userName;
     private String userEmail;

@@ -4,12 +4,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.music.music.api.entity.SongDTO;
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.dto.CollaboPlaylistParticipantDTO;
 import com.music.music.playlist.service.PlaylistService;
 import com.music.music.playlist.service.PlaylistSongService;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -37,8 +36,10 @@ public class PlaylistController {
 
   // 플레이리스트 전체 조회 (/playlist/all + GET)
   @GetMapping("/all")
-  public List<PlaylistDTO> getAllPlaylists() {
-    return playlistService.getAllPlaylists();
+  public List<PlaylistDTO> getAllPlaylists(@RequestParam("email") String email) {
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalStateException("유저 없음"));
+    return playlistService.getAllPlaylists(user.getId());
   }
 
   // playlist_song 테이블 매핑 될 수 있도록 수정
@@ -56,22 +57,26 @@ public class PlaylistController {
       PlaylistDTO playlistDTO = playlistService.createPlaylist(file, title, description, songIds, user, type, genre);
       return ResponseEntity.ok(playlistDTO);
     } catch (IllegalArgumentException e) {
-      return ResponseEntity.status(409).build(); // 플레이리스트 제목 중복 시
+      return ResponseEntity.status(409).build();
     }
   }
 
   // 플레이리스트 상세 조회 (/playlist/{id} + GET)
   @GetMapping("/{id}")
-  public PlaylistDTO getPlaylist(@PathVariable Long id) {
-
-    return playlistService.getPlaylist(id);
+  public PlaylistDTO getPlaylist(@PathVariable("id") Long id, @RequestParam("email") String email) {
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalStateException("유저 없음"));
+    return playlistService.getPlaylist(id, user.getId());
   }
 
   // 플레이리스트 수정 (/playlist/{id} + PUT)
-  @PutMapping("/{id}")
-  public PlaylistDTO putPlaylist(@PathVariable Long id, @RequestBody PlaylistDTO dto) {
+  @PutMapping(value = "/{id}", consumes = "multipart/form-data")
+  public PlaylistDTO updatePlaylist(
+      @PathVariable("id") Long id,
+      @RequestPart("dto") PlaylistDTO dto,
+      @RequestPart(value = "file", required = false) MultipartFile file) {
 
-    return playlistService.updatePlaylist(id, dto);
+    return playlistService.updatePlaylist(id, dto, file);
   }
 
   // 플레이리스트 삭제 (/playlist/{id} + DELETE)
@@ -90,39 +95,6 @@ public class PlaylistController {
   @GetMapping("/collabo/all")
   public List<PlaylistDTO> getAllCollaborativePlaylists() {
     return playlistService.getAllCollaborativePlaylists();
-  }
-
-  // 수록곡 목록 조회 (/playlist/{playlistId}/songs + GET)
-  @GetMapping("/{playlistId}/songs")
-  public List<SongDTO> getPlaylistSongs(@PathVariable Long playlistId) {
-    return playlistSongService.getPlaylistSongs(playlistId);
-  }
-
-  // 작성자 직접 곡 추가 (/playlist/{playlistId}/songs/{songId} + POST)
-  @PostMapping("/{playlistId}/songs/{songId}")
-  public ResponseEntity<Void> addSongDirectly(
-      @PathVariable Long playlistId,
-      @PathVariable Long songId,
-      @RequestParam("email") String email) {
-    try {
-      playlistSongService.addSongDirectly(playlistId, songId, email);
-      return ResponseEntity.ok().build();
-    } catch (IllegalStateException e) {
-      return ResponseEntity.status(403).build();
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.status(409).build();
-    }
-  }
-
-  // 수록곡 삭제 (/playlist/songs/{playlistSongId} + DELETE)
-  @DeleteMapping("/songs/{playlistSongId}")
-  public ResponseEntity<Void> removeSong(@PathVariable Long playlistSongId) {
-    try {
-      playlistSongService.removeSong(playlistSongId);
-      return ResponseEntity.ok().build();
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.notFound().build();
-    }
   }
 
   // 곡 제안 (/playlist/{playlistId}/songs/suggest + POST)

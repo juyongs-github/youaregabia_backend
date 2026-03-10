@@ -15,4 +15,10 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
 
     List<Playlist> findByType(PlaylistType type);
 
+    // 전체 조회
+    List<Playlist> findAllByUserId(Long userId);
+
+    // 상세 조회
+    Optional<Playlist> findByIdAndUserId(Long playlistId, Long userId);
+
 }

@@ -5,7 +5,7 @@ import com.music.music.review.entity.Review;
 import com.music.music.review.repository.ReviewRepository;
 import com.music.music.playlist.entity.Playlist;
 import com.music.music.playlist.repository.PlaylistRepository;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 
 import org.modelmapper.ModelMapper;

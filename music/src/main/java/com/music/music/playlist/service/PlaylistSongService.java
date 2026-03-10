@@ -15,7 +15,7 @@ import com.music.music.playlist.entity.CollaboPlaylistParticipant;
 import com.music.music.playlist.repository.PlaylistRepository;
 import com.music.music.playlist.repository.PlaylistSongRepository;
 import com.music.music.playlist.repository.CollaboPlaylistParticipantRepository;
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -31,13 +31,22 @@ public class PlaylistSongService {
     private final SongRepository songRepository;
     private final UserRepository userRepository;
 
-    /*
-     * =========================
-     * Entity → DTO
-     * =========================
-     */
-    private SongDTO toSongDto(Song song) {
+    // 곡 조회
+    public List<SongDTO> getSongsByPlaylist(Long playlistId) {
+        return playlistSongRepository.findByPlaylistIdWithSong(playlistId)
+                .stream()
+                .map(this::toSongDto)
+                .toList();
+    }
+
+    // Song → DTO
+    private SongDTO toSongDto(PlaylistSong ps) {
+
+        Song song = ps.getSong();
+
+
         return SongDTO.builder()
+                .playlistSongId(ps.getId()) // *
                 .id(song.getId())
                 .trackName(song.getTrackName())
                 .artistName(song.getArtistName())
@@ -71,7 +80,7 @@ public class PlaylistSongService {
     public List<SongDTO> getPlaylistSongs(Long playlistId) {
         return playlistSongRepository.findByPlaylistIdWithSong(playlistId)
                 .stream()
-                .map(ps -> toSongDto(ps.getSong()))
+                .map(this::toSongDto)
                 .toList();
     }
 

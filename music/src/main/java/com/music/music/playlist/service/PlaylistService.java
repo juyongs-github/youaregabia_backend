@@ -54,7 +54,7 @@ public class PlaylistService {
      */
     @Transactional
     public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, List<Long> songIds,
-            User user) {
+            User user, String type, String genre) {
 
         // String imageUrl = dto.getImageUrl() != null
         // ? dto.getImageUrl()
@@ -80,10 +80,11 @@ public class PlaylistService {
 
         Playlist playlist = Playlist.builder()
                 .user(user)
-                .type(PlaylistType.MYPLAYLIST)
+                .type(PlaylistType.valueOf(type.toUpperCase()))
                 .title(title)
                 .description(description)
                 .imageUrl(imageUrl)
+                .genre(genre)
                 .build();
 
         // playlist_song 테이블에 곡 매핑
@@ -119,6 +120,15 @@ public class PlaylistService {
     @Transactional(readOnly = true)
     public List<PlaylistDTO> getAllPlaylists() {
         return playlistRepository.findAll()
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
+    // 공동 플레이리스트 전체 조회
+    @Transactional(readOnly = true)
+    public List<PlaylistDTO> getAllCollaborativePlaylists() {
+        return playlistRepository.findByType(PlaylistType.COLLABORATIVE)
                 .stream()
                 .map(this::toDto)
                 .toList();

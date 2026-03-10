@@ -14,6 +14,8 @@ import com.music.music.board.entity.Reply;
 public interface ReplyRepository extends JpaRepository<Reply, Long> {
 
   Page<Reply> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
+  // 내가 쓴 댓글
+  List<Reply> findByUser_EmailOrderByCreatedAtDesc(String email);
 
   long countByBoard_BoardId(Long boardId);
 

@@ -50,7 +50,7 @@ public class AuthController {
   public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
     User user = userService.login(request);
 
-    String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getName());
+    String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getName(), user.getRole().name());
 
     LoginResponse response = LoginResponse.builder()
         .email(user.getEmail())
@@ -58,6 +58,7 @@ public class AuthController {
         .createdAt(user.getCreatedAt())
         .imgUrl(user.getImgUrl())
         .token(token)
+        .role(user.getRole().name())
         .build();
 
     return ResponseEntity.ok(response);

@@ -14,4 +14,6 @@ public interface BoardRepository extends JpaRepository<Board, Long>{
     Page<Board> findByTitle(String title, Pageable pageable);
     // 제목 부분일치 검색
     Page<Board> findByTitleContaining(String keyword, Pageable pageable);
+    // 내가 쓴 게시글
+    List<Board> findByUser_EmailOrderByCreatedAtDesc(String email);
 }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -33,9 +34,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
       if (jwtUtil.isValid(token)) {
         Claims claims = jwtUtil.parseClaims(token);
         String email = claims.get("email", String.class);
+        String role = claims.get("role", String.class);
+
+        // "ROLE_ADMIN", "ROLE_USER" 형태로 Spring Security 권한 설정
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
 
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(email, null, List.of());
+            new UsernamePasswordAuthenticationToken(email, null, List.of(authority));
         SecurityContextHolder.getContext().setAuthentication(authentication);
       }
     }

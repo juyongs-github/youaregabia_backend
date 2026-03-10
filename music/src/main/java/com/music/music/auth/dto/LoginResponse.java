@@ -15,4 +15,5 @@ public class LoginResponse {
   private LocalDateTime createdAt;
   private String imgUrl;
   private String token;
+  private String role;
 }

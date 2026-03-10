@@ -29,28 +29,29 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-	    http.cors(Customizer.withDefaults())
-        .csrf(AbstractHttpConfigurer::disable)
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-            .requestMatchers(
-                "/api/auth/register",
-                "/api/auth/login",
-                "/api/auth/email-check",
-                "/api/auth/social/**")
-            .permitAll()
-            .requestMatchers("/api/auth/sms/**").permitAll()
-            .requestMatchers("/api/ci/**").permitAll()
-            .anyRequest().permitAll())
-        .formLogin(AbstractHttpConfigurer::disable)
-        .httpBasic(AbstractHttpConfigurer::disable)
-        .oauth2Login(oauth2 -> oauth2
-            .authorizationEndpoint(endpoint -> endpoint
-                .authorizationRequestResolver(customOAuth2AuthorizationRequestResolver))
-            .successHandler(oAuth2SuccessHandler))
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        http.cors(Customizer.withDefaults())
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(
+                    "/api/auth/register",
+                    "/api/auth/login",
+                    "/api/auth/email-check",
+                    "/api/auth/social/**").permitAll()
+                .requestMatchers("/api/auth/sms/**").permitAll()
+                .requestMatchers("/api/ci/**").permitAll()
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                .requestMatchers("/api/notifications/**").authenticated()
+                .anyRequest().permitAll())
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(endpoint -> endpoint
+                    .authorizationRequestResolver(customOAuth2AuthorizationRequestResolver))
+                .successHandler(oAuth2SuccessHandler))
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-      return http.build();
+        return http.build();
     }
 
     @Bean

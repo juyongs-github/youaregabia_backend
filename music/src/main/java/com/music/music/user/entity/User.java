@@ -10,6 +10,8 @@ import org.hibernate.annotations.ColumnDefault;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -85,6 +87,11 @@ public class User {
   @Column
   private Integer state;
 
+  // 권한 (USER / CRITIC / ADMIN)
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 20)
+  private Role role;
+
   // === JPA 라이프사이클 ===
   @PrePersist
   protected void onCreate() {
@@ -92,6 +99,9 @@ public class User {
     this.updatedAt = this.createdAt;
     if (this.state == null) {
       this.state = 1;
+    }
+    if (this.role == null) {
+      this.role = Role.USER;
     }
   }
 
@@ -106,5 +116,9 @@ public class User {
 
   public void setPassword(String password) {
     this.password = password;
+  }
+
+  public void setRole(Role role) {
+    this.role = role;
   }
 }

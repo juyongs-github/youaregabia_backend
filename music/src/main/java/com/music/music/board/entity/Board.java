@@ -38,15 +38,20 @@ public class Board extends BaseEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long boardId;
 
-  // 작성자
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+   // 작성자
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-  // 게시글 타입
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 30)
-  private BoardType boardType;
+    // 게시글 타입
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private BoardType boardType;
+    
+    // 게시글 장르
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private BoardGenre boardGenre;
 
   @Column(nullable = false, length = 100)
   private String title;
@@ -55,17 +60,36 @@ public class Board extends BaseEntity {
   private String content;
 
   @Column(nullable = false)
+  @Builder.Default 
   private int viewCount = 0;
 
+  // Board 엔티티에 추가
   @Column(nullable = false)
+  @Builder.Default
   private int likeCount = 0;
 
-  @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
-  @Builder.Default
-  private List<Reply> replies = new ArrayList<>();
+    // Soft Delete
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
 
-  public void update(String title, String content) {
+    @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @Builder.Default
+    private List<Reply> replies = new ArrayList<>();
+
+    public void delete() {
+        this.deleted = true;
+    }
+
+    public void update(String title, String content, BoardGenre boardGenre) {
     this.title = title;
     this.content = content;
+    this.boardGenre = boardGenre;
+    }
+    public void increaseViewCount() {
+    this.viewCount++;
+  }
+    public void increaseLikeCount() {
+    this.likeCount++;
   }
 }

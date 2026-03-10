@@ -15,4 +15,5 @@ import lombok.ToString;
 @AllArgsConstructor
 public class ReplyCreateDto {
     private String content;// 댓글 작성 요청 많아질 때를 혹시 몰라 대비해서 분리
+    private Long parentReplyId;
 }

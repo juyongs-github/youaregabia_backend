@@ -37,6 +37,9 @@ out/
 .vscode/
 
 ### gradle ###
+<<<<<<< HEAD
+gradle.properties
+=======
 gradle.properties
 
 ### Upload Files ###
@@ -44,3 +47,4 @@ gradle.properties
 
 ### Secrets ###
 src/main/resources/application.properties
+>>>>>>> origin/feature/jylee_2

@@ -3,7 +3,7 @@ package com.music.music.board.entity;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.music.music.common.entity.BaseEntity;
+import com.music.music.board.common.entity.BaseEntity;
 import com.music.music.user.entitiy.User;
 
 import jakarta.persistence.CascadeType;
@@ -28,27 +28,24 @@ import lombok.ToString;
 @Getter
 @ToString(exclude = "replyLikes")
 @Entity
-public class Reply extends BaseEntity{
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long replyId;
+public class Reply extends BaseEntity {
 
-    // 어떤 게시글의 댓글인지
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", nullable = false)
-    private Board board;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long replyId;
 
-    // 댓글 작성자
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  // 어떤 게시글의 댓글인지
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "board_id", nullable = false)
+  private Board board;
 
-    @Column(nullable = false, length = 500)
-    private String content;
+  // 댓글 작성자
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    @Column(nullable = false)
-    private int likeCount = 0;
+  @Column(nullable = false, length = 500)
+  private String content;
 
     // 대댓글 부모 참조 (null이면 최상위 댓글)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -64,7 +61,7 @@ public class Reply extends BaseEntity{
     @Builder.Default
     private List<ReplyLike> replyLikes = new ArrayList<>();
 
-    public void updateContent(String content) {
+  public void updateContent(String content) {
     this.content = content;
     }
     

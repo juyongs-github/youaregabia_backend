@@ -13,7 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.music.music.auth.dto.LoginRequest;
 import com.music.music.auth.dto.RegisterRequest;
+<<<<<<< HEAD
 import com.music.music.user.entitiy.User;
+=======
+import com.music.music.user.entity.User;
+>>>>>>> origin/feature/jylee_2
 import com.music.music.user.repository.UserRepository;
 import com.music.music.user.service.UserService;
 

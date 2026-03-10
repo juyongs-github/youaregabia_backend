@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.music.music.user.entitiy.User;
+import com.music.music.user.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -30,4 +30,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   // CI값 중복되면 안되서 체크필요
   boolean existsByCi(String ci);
+
+  Optional<User> findByCi(String ci);
+
+  Optional<User> findByNameAndPhoneNumber(String name, String phoneNumber);
+
+  Optional<User> findByEmailAndPhoneNumber(String email, String phoneNumber);
 }

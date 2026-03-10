@@ -13,6 +13,7 @@ import com.music.music.board.entity.BoardType;
 
 public interface BoardRepository extends JpaRepository<Board, Long>{
     // 제목 완전일치
+<<<<<<< HEAD
     Page<Board> findByDeletedFalseAndTitle(String title, Pageable pageable);
 
     // 제목 부분일치 검색
@@ -29,4 +30,9 @@ public interface BoardRepository extends JpaRepository<Board, Long>{
     Page<Board> findByDeletedFalse(Pageable pageable);
 
     Optional<Board> findByBoardIdAndDeletedFalse(Long boardId);
+=======
+    Page<Board> findByTitle(String title, Pageable pageable);
+    // 제목 부분일치 검색
+    Page<Board> findByTitleContaining(String keyword, Pageable pageable);
+>>>>>>> origin/feature/jylee_2
 }

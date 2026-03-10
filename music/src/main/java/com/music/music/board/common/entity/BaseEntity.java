@@ -1,4 +1,4 @@
-package com.music.music.common.entity;
+package com.music.music.board.common.entity;
 
 import java.time.LocalDateTime;
 

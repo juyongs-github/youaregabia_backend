@@ -10,7 +10,11 @@
 // import com.music.music.board.entity.Reply;
 // import com.music.music.board.repository.BoardRepository;
 // import com.music.music.board.repository.ReplyRepository;
+<<<<<<< HEAD
 // import com.music.music.user.entitiy.User;
+=======
+// import com.music.music.user.entity.User;
+>>>>>>> origin/feature/jylee_2
 // import com.music.music.user.repository.UserRepository;
 
 // @Disabled

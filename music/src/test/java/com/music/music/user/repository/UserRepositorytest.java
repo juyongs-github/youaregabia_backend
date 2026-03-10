@@ -9,7 +9,11 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.annotation.Rollback;
 
+<<<<<<< HEAD
 import com.music.music.user.entitiy.User;
+=======
+import com.music.music.user.entity.User;
+>>>>>>> origin/feature/jylee_2
 import com.music.music.user.repository.UserRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;

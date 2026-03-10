@@ -3,6 +3,7 @@ package com.music.music.board.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.music.music.board.common.dto.PageResultDTO;
 import com.music.music.board.entity.Board;
 import com.music.music.board.entity.BoardGenre;
 import com.music.music.board.entity.BoardType;
@@ -27,9 +28,12 @@ public class BoardDto {
     private String content;
     private String writer;
     private LocalDateTime createdAt;
+<<<<<<< HEAD
     private String boardGenre;
     private String boardType;
     private int viewCount;
+=======
+>>>>>>> origin/feature/jylee_2
     // reply 페이징을 위해서 PageResultDTO로 변경
     private PageResultDTO<ReplyResponseDto> replies;
 
@@ -38,14 +42,20 @@ public class BoardDto {
         this.title = board.getTitle();
         this.content = board.getContent();
         this.writer = board.getUser() != null
+<<<<<<< HEAD
         ? board.getUser().getName()
         : "unknown";
+=======
+                ? board.getUser().getName()
+                : "unknown";
+>>>>>>> origin/feature/jylee_2
         this.createdAt = board.getCreatedAt();
         this.boardGenre = board.getBoardGenre().name();
         this.boardType = board.getBoardType().name();
         this.replies = replies;
         this.viewCount = board.getViewCount();
     }
+<<<<<<< HEAD
     
     // 목록용 생성자 (댓글 없음)
     public BoardDto(Board board) {
@@ -58,4 +68,15 @@ public class BoardDto {
     this.viewCount = board.getViewCount();
 }
     
+=======
+
+    // 목록용 생성자 (댓글 없음)
+    public BoardDto(Board board) {
+        this.boardId = board.getBoardId();
+        this.title = board.getTitle();
+        this.writer = board.getUser().getName();
+        this.createdAt = board.getCreatedAt();
+    }
+
+>>>>>>> origin/feature/jylee_2
 }

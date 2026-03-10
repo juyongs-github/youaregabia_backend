@@ -3,8 +3,13 @@ package com.music.music.board.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+<<<<<<< HEAD
 import com.music.music.common.entity.BaseEntity;
 import com.music.music.user.entitiy.User;
+=======
+import com.music.music.board.common.entity.BaseEntity;
+import com.music.music.user.entity.User;
+>>>>>>> origin/feature/jylee_2
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -32,17 +37,13 @@ import lombok.ToString;
 @ToString(exclude = "replies")
 @Builder
 @Table(name = "board")
-public class Board extends BaseEntity{
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long boardId;
+public class Board extends BaseEntity {
 
-    // 작성자
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long boardId;
 
+<<<<<<< HEAD
     // 게시글 타입
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -52,19 +53,28 @@ public class Board extends BaseEntity{
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private BoardGenre boardGenre;
+=======
+  // 작성자
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
+>>>>>>> origin/feature/jylee_2
 
-    @Column(nullable = false, length = 100)
-    private String title;
+  // 게시글 타입
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 30)
+  private BoardType boardType;
 
-    @Column(nullable = false)
-    private String content;
+  @Column(nullable = false, length = 100)
+  private String title;
 
-    @Column(nullable = false)
-    private int viewCount = 0;
+  @Column(nullable = false)
+  private String content;
 
-    @Column(nullable = false)
-    private int likeCount = 0;
+  @Column(nullable = false)
+  private int viewCount = 0;
 
+<<<<<<< HEAD
     // Soft Delete
     @Column(nullable = false)
     @Builder.Default
@@ -86,4 +96,17 @@ public class Board extends BaseEntity{
     public void increaseViewCount() {
     this.viewCount++;
 }
+=======
+  @Column(nullable = false)
+  private int likeCount = 0;
+
+  @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @Builder.Default
+  private List<Reply> replies = new ArrayList<>();
+
+  public void update(String title, String content) {
+    this.title = title;
+    this.content = content;
+  }
+>>>>>>> origin/feature/jylee_2
 }

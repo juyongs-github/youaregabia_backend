@@ -1,4 +1,4 @@
-package com.music.music.common.dto;
+package com.music.music.board.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

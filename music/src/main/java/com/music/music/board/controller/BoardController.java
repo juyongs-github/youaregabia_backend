@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.music.music.board.common.dto.PageRequestDTO;
+import com.music.music.board.common.dto.PageResultDTO;
 import com.music.music.board.dto.BoardDto;
 import com.music.music.board.service.BoardService;
-import com.music.music.common.dto.PageRequestDTO;
-import com.music.music.common.dto.PageResultDTO;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -25,9 +25,16 @@ import lombok.extern.log4j.Log4j2;
 @RestController
 @RequestMapping("/community/share")
 public class BoardController {
-    private final BoardService boardService;
+  private final BoardService boardService;
 
-    
+  @GetMapping("")
+  public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,
+      @RequestParam(name = "keyword", required = false) String keyword) {
+    log.info("전체 조회 신청 {}", keyword);
+    // 키워드는 필수가 아님
+    PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword);
+    return result;
+  }
 
     @GetMapping("")
     public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,

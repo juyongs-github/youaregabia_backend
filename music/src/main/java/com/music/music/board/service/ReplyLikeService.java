@@ -1,5 +1,7 @@
 package com.music.music.board.service;
 
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +22,7 @@ public class ReplyLikeService {
     private final ReplyLikeRepository replyLikeRepository;
     private final UserRepository userRepository;
 
-    public long toggleLike(Long replyId, String email) {
+    public Map<String, Object> toggleLike(Long replyId, String email) {
 
         Reply reply = replyRepository.findById(replyId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
@@ -28,10 +30,11 @@ public class ReplyLikeService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
 
-        // 좋아요 이미 눌렀는지 확인
-        boolean alreadyLiked = replyLikeRepository.existsByReply_ReplyIdAndUser_Email(replyId, email);
+                // 좋아요 이미 눌렀는지 확인
+        boolean alreadyLiked =
+                replyLikeRepository.existsByReply_ReplyIdAndUser_Email(replyId, email);
 
-        // 이미 눌렀으면 좋아요를 취소
+                // 이미 눌렀으면 좋아요를 취소
         if (alreadyLiked) {
             replyLikeRepository.deleteByReply_ReplyIdAndUser_Email(replyId, email);
         } else {
@@ -42,7 +45,9 @@ public class ReplyLikeService {
                             .build());
         }
 
-        return replyLikeRepository.countByReply_ReplyId(replyId);
+        long likeCount = replyLikeRepository.countByReply_ReplyId(replyId);
+        boolean likedByMe = !alreadyLiked;
+        return Map.of("likeCount", likeCount, "likedByMe", likedByMe);
     }
 
 }

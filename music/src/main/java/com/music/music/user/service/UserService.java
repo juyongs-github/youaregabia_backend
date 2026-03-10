@@ -9,8 +9,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.music.music.auth.dto.LoginRequest;
 import com.music.music.auth.dto.RegisterRequest;
+import com.music.music.auth.dto.SocialRegisterRequest;
+import com.music.music.auth.oauth2.OAuth2UserInfo;
 import com.music.music.user.entity.User;
+import com.music.music.user.entity.UserSocialAccount;
 import com.music.music.user.repository.UserRepository;
+import com.music.music.user.repository.UserSocialAccountRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
 
   private final UserRepository userRepository;
+  private final UserSocialAccountRepository socialAccountRepository;
   private final PasswordEncoder passwordEncoder;
 
   private static final LocalDate MIN_BIRTH_DATE = LocalDate.of(1920, 1, 1);
@@ -119,6 +124,91 @@ public class UserService {
       return digits.substring(0, 3) + "-" + digits.substring(3, 6) + "-" + digits.substring(6);
     }
     return phone;
+  }
+
+  public User registerSocialUser(SocialRegisterRequest request, OAuth2UserInfo oAuth2UserInfo) {
+    if (userRepository.existsByCi(request.ci())) {
+      throw new IllegalArgumentException("이미 가입된 사용자입니다.");
+    }
+
+    LocalDate birthDate = validateAndParseBirthDate(request.birthDate());
+    String normalizedPhone = normalizePhone(request.phoneNumber());
+    String normalizedEmail = normalizeEmail(oAuth2UserInfo.email());
+
+    User user = User.builder()
+        .email(normalizedEmail)
+        .name(request.name())
+        .birthDate(birthDate)
+        .phoneNumber(normalizedPhone)
+        .ci(request.ci())
+        .build();
+
+    userRepository.save(user);
+
+    UserSocialAccount socialAccount = UserSocialAccount.builder()
+        .user(user)
+        .provider(oAuth2UserInfo.provider())
+        .providerId(oAuth2UserInfo.providerId())
+        .build();
+
+    socialAccountRepository.save(socialAccount);
+
+    return user;
+  }
+
+  public User linkSocialUser(String ci, OAuth2UserInfo oAuth2UserInfo) {
+    User user = userRepository.findByCi(ci)
+        .orElseThrow(() -> new IllegalArgumentException("해당 CI의 사용자를 찾을 수 없습니다."));
+
+    boolean alreadyLinked = socialAccountRepository
+        .findByProviderAndProviderId(oAuth2UserInfo.provider(), oAuth2UserInfo.providerId())
+        .isPresent();
+
+    if (!alreadyLinked) {
+      UserSocialAccount socialAccount = UserSocialAccount.builder()
+          .user(user)
+          .provider(oAuth2UserInfo.provider())
+          .providerId(oAuth2UserInfo.providerId())
+          .build();
+      socialAccountRepository.save(socialAccount);
+    }
+
+    return user;
+  }
+
+  @Transactional
+  public void deleteUser(String email) {
+    String normalizedEmail = normalizeEmail(email);
+    User user = userRepository.findByEmail(normalizedEmail)
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+    userRepository.delete(user);
+  }
+
+  @Transactional(readOnly = true)
+  public String findEmail(String name, String phoneNumber) {
+    String normalizedPhone = normalizePhone(phoneNumber);
+    User user = userRepository.findByNameAndPhoneNumber(name, normalizedPhone)
+        .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
+    return maskEmail(user.getEmail());
+  }
+
+  @Transactional
+  public void resetPassword(String email, String phoneNumber, String newPassword) {
+    String normalizedEmail = normalizeEmail(email);
+    String normalizedPhone = normalizePhone(phoneNumber);
+    User user = userRepository.findByEmailAndPhoneNumber(normalizedEmail, normalizedPhone)
+        .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
+    user.setPassword(passwordEncoder.encode(newPassword));
+  }
+
+  private String maskEmail(String email) {
+    int atIdx = email.indexOf('@');
+    if (atIdx <= 2) return email;
+    String local = email.substring(0, atIdx);
+    String domain = email.substring(atIdx);
+    String visible = local.substring(0, 2);
+    String masked = "*".repeat(local.length() - 2);
+    return visible + masked + domain;
   }
 
   @Transactional

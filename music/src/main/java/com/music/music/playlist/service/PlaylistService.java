@@ -1,7 +1,5 @@
 package com.music.music.playlist.service;
 
-// import static org.mockito.Mockito.description;
-
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -56,16 +54,6 @@ public class PlaylistService {
     public PlaylistDTO createPlaylist(MultipartFile file, String title, String description, List<Long> songIds,
             User user, String type, String genre) {
 
-        // String imageUrl = dto.getImageUrl() != null
-        // ? dto.getImageUrl()
-        // : "/images/default-playlist.png";
-
-        // Playlist playlist = Playlist.builder()
-        // .title(dto.getTitle())
-        // .description(dto.getDescription())
-        // .imageUrl(imageUrl)
-        // .build();
-
         if (playlistRepository.existsByUserIdAndTitle(user.getId(), title)) {
             throw new IllegalArgumentException("같은 제목의 플레이리스트가 이미 존재합니다.");
         }
@@ -87,7 +75,6 @@ public class PlaylistService {
                 .genre(genre)
                 .build();
 
-        // playlist_song 테이블에 곡 매핑
         if (songIds != null) {
             List<Song> songs = songRepository.findAllById(songIds);
             for (Song song : songs) {
@@ -152,9 +139,7 @@ public class PlaylistService {
             playlist.changeDescription(dto.getDescription());
         }
         if (file != null && !file.isEmpty()) {
-
             String imageUrl = fileService.upload(file);
-
             playlist.changeImageUrl(imageUrl);
         }
 

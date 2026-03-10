@@ -1,6 +1,8 @@
 package com.music.music.board.dto;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.music.music.board.entity.Reply;
 
@@ -25,15 +27,20 @@ public class ReplyResponseDto {
     private int likeCount;
     private boolean likedByMe;
     private LocalDateTime createdAt;
+    private boolean deleted;
+    private String writerEmail;
+    private List<ReplyResponseDto> children = new ArrayList<>();
 
     // ✅ JPQL 전용 생성자
     public ReplyResponseDto(
     Long replyId,
     String content,
     String writer,
+    String writerEmail,
     Long likeCount,
     Long likedByMe,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    boolean deleted
 ) {
     this.replyId = replyId;
     this.content = content;
@@ -41,6 +48,8 @@ public class ReplyResponseDto {
     this.likeCount = likeCount != null ? likeCount.intValue() : 0;
     this.likedByMe = likedByMe != null && likedByMe > 0;
     this.createdAt = createdAt;
+    this.deleted = deleted;
+    this.writerEmail = writerEmail;
 }
 
 

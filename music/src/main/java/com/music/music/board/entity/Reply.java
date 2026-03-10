@@ -30,31 +30,46 @@ import lombok.ToString;
 @Entity
 public class Reply extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long replyId;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long replyId;
 
-    // 어떤 게시글의 댓글인지
+  // 어떤 게시글의 댓글인지
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "board_id", nullable = false)
+  private Board board;
+
+  // 댓글 작성자
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
+
+  @Column(nullable = false, length = 500)
+  private String content;
+
+  @Column(nullable = false)
+  @Builder.Default
+  private int likeCount = 0;
+
+    // 대댓글 부모 참조 (null이면 최상위 댓글)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "board_id", nullable = false)
-    private Board board;
+    @JoinColumn(name = "parent_reply_id")
+    private Reply parentReply;
 
-    // 댓글 작성자
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @Column(nullable = false, length = 500)
-    private String content;
-
+    // Soft Delete
     @Column(nullable = false)
-    private int likeCount = 0;
+    @Builder.Default
+    private boolean deleted = false;
 
     @OneToMany(mappedBy = "reply", cascade = CascadeType.REMOVE, orphanRemoval = true)
     @Builder.Default
     private List<ReplyLike> replyLikes = new ArrayList<>();
 
-    public void updateContent(String content) {
-        this.content = content;
+  public void updateContent(String content) {
+    this.content = content;
+    }
+    
+    public void delete() {
+    this.deleted = true;
     }
 }

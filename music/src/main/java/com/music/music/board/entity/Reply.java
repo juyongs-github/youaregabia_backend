@@ -47,6 +47,10 @@ public class Reply extends BaseEntity {
   @Column(nullable = false, length = 500)
   private String content;
 
+  @Column(nullable = false)
+  @Builder.Default
+  private int likeCount = 0;
+
     // 대댓글 부모 참조 (null이면 최상위 댓글)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_reply_id")

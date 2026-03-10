@@ -15,12 +15,10 @@ public interface BoardRepository extends JpaRepository<Board, Long>{
     // 제목 완전일치
     Page<Board> findByDeletedFalseAndTitle(String title, Pageable pageable);
 
-    // 제목 부분일치 검색
-<<<<<<< HEAD
-    Page<Board> findByTitleContaining(String keyword, Pageable pageable);
     // 내가 쓴 게시글
     List<Board> findByUser_EmailOrderByCreatedAtDesc(String email);
-=======
+
+    // 제목 부분일치 검색
     Page<Board> findByDeletedFalseAndTitleContaining(String keyword, Pageable pageable);
 
     // 장르 검색
@@ -36,10 +34,9 @@ public interface BoardRepository extends JpaRepository<Board, Long>{
     Optional<Board> findByBoardIdAndDeletedFalse(Long boardId);
 
     // 자유게시판 전체 조회
-    Page<Board> findByDeletedFalseAndBoardType(BoardType boardType, Pageable pageable); 
+    Page<Board> findByDeletedFalseAndBoardType(BoardType boardType, Pageable pageable);
 
     // 자유게시판 키워드 검색
     Page<Board> findByDeletedFalseAndBoardTypeAndTitleContaining(
-    BoardType boardType, String keyword, Pageable pageable);
->>>>>>> origin/feature/board-after-gitignore
+            BoardType boardType, String keyword, Pageable pageable);
 }

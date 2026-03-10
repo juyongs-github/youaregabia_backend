@@ -6,25 +6,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param; // ✅ 이거 추가
 
 import com.music.music.board.dto.ReplyResponseDto;
-import com.music.music.board.entity.Board;
-import com.music.music.board.entity.BoardGenre;
 import com.music.music.board.entity.Reply;
 
 public interface ReplyRepository extends JpaRepository<Reply, Long>{
      // 특정 게시글의 댓글 조회 (최신순)
     Page<Reply> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
 
-<<<<<<< HEAD
-  Page<Reply> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
-  // 내가 쓴 댓글
-  List<Reply> findByUser_EmailOrderByCreatedAtDesc(String email);
-=======
+    // 내가 쓴 댓글
+    List<Reply> findByUser_EmailOrderByCreatedAtDesc(String email);
+
     // 특정 게시글의 댓글 개수
     long countByBoard_BoardId(Long boardId);
->>>>>>> origin/feature/board-after-gitignore
 
    // 최신순 전용
     @Query("""

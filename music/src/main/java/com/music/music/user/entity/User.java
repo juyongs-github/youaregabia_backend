@@ -117,12 +117,8 @@ public class User {
   public void setPassword(String password) {
     this.password = password;
   }
-<<<<<<< HEAD
 
   public void setRole(Role role) {
     this.role = role;
   }
 }
-=======
-}
->>>>>>> origin/feature/board-after-gitignore

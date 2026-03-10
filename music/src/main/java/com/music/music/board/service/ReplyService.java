@@ -12,11 +12,7 @@ import com.music.music.board.entity.Reply;
 import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
-<<<<<<< HEAD
-import com.music.music.user.entitiy.User;
-=======
 import com.music.music.user.entity.User;
->>>>>>> origin/feature/jylee_2
 import com.music.music.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,37 +21,21 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional
 public class ReplyService {
-  private final ReplyRepository replyRepository;
-  private final BoardRepository boardRepository;
-  private final UserRepository userRepository;
-  private final ReplyLikeRepository replyLikeRepository;
+    private final ReplyRepository replyRepository;
+    private final BoardRepository boardRepository;
+    private final UserRepository userRepository;
+    private final ReplyLikeRepository replyLikeRepository;
 
-<<<<<<< HEAD
     
-=======
-  public Long createReply(Long boardId, String email, ReplyCreateDto dto) {
->>>>>>> origin/feature/jylee_2
 
-    Board board = boardRepository.findById(boardId)
-        .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
-    User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
+    
 
-<<<<<<< HEAD
     public Long createReply(Long boardId, String email, ReplyCreateDto dto) {
-=======
-    Reply reply = Reply.builder()
-        .board(board)
-        .user(user)
-        .content(dto.getContent())
-        .build();
->>>>>>> origin/feature/jylee_2
 
-    return replyRepository.save(reply).getReplyId();
-  }
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
 
-<<<<<<< HEAD
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
         
@@ -89,35 +69,14 @@ public class ReplyService {
     }
     @Transactional
     public void updateReply(Long replyId, String email, ReplyCreateDto dto) {
-=======
-  public void deleteReply(Long replyId, String email) {
->>>>>>> origin/feature/jylee_2
 
     Reply reply = replyRepository.findById(replyId)
-        .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+            .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
 
     if (!reply.getUser().getEmail().equals(email)) {
-<<<<<<< HEAD
         throw new IllegalStateException("댓글 수정 권한이 없습니다.");
-=======
-      throw new IllegalStateException("댓글 삭제 권한이 없습니다.");
-    }
-
-    replyRepository.delete(reply);
-
-  }
-
-  @Transactional
-  public void updateReply(Long replyId, String email, ReplyCreateDto dto) {
-
-    Reply reply = replyRepository.findById(replyId)
-        .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
-
-    if (!reply.getUser().getEmail().equals(email)) {
-      throw new IllegalStateException("댓글 수정 권한이 없습니다.");
->>>>>>> origin/feature/jylee_2
     }
 
     reply.updateContent(dto.getContent());
-  }
+}
 }

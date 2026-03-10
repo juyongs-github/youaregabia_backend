@@ -25,16 +25,9 @@ import lombok.extern.log4j.Log4j2;
 @RestController
 @RequestMapping("/community/share")
 public class BoardController {
-  private final BoardService boardService;
+    private final BoardService boardService;
 
-  @GetMapping("")
-  public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,
-      @RequestParam(name = "keyword", required = false) String keyword) {
-    log.info("전체 조회 신청 {}", keyword);
-    // 키워드는 필수가 아님
-    PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword);
-    return result;
-  }
+    
 
     @GetMapping("")
     public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,

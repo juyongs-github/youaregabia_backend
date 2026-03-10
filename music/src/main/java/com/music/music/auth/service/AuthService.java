@@ -4,11 +4,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.music.music.auth.dto.LoginRequest;
-<<<<<<< HEAD
-import com.music.music.user.entitiy.User;
-=======
 import com.music.music.user.entity.User;
->>>>>>> origin/feature/jylee_2
 import com.music.music.user.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;

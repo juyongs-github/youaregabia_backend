@@ -1,12 +1,7 @@
 package com.music.music.board.entity;
 
-<<<<<<< HEAD
-import com.music.music.common.entity.BaseEntity;
-import com.music.music.user.entitiy.User;
-=======
 import com.music.music.board.common.entity.BaseEntity;
 import com.music.music.user.entity.User;
->>>>>>> origin/feature/jylee_2
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

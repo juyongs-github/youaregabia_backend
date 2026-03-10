@@ -13,7 +13,6 @@ import com.music.music.board.entity.Board;
 import com.music.music.board.entity.BoardGenre;
 import com.music.music.board.entity.Reply;
 
-<<<<<<< HEAD
 public interface ReplyRepository extends JpaRepository<Reply, Long>{
      // 특정 게시글의 댓글 조회 (최신순)
     Page<Reply> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
@@ -70,53 +69,3 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
         """)
     List<ReplyResponseDto> findChildren(Long parentReplyId, String email);
 }
-=======
-public interface ReplyRepository extends JpaRepository<Reply, Long> {
-
-  Page<Reply> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
-
-  long countByBoard_BoardId(Long boardId);
-
-  @Query("""
-      select new com.music.music.board.dto.ReplyResponseDto(
-          r.replyId,
-          r.content,
-          u.name,
-          count(rl),
-          sum(case when rl.user.email = :email then 1 else 0 end),
-          r.createdAt
-      )
-      from Reply r
-      join r.user u
-      left join ReplyLike rl on rl.reply.replyId = r.replyId
-      where r.board.boardId = :boardId
-      group by r.replyId, r.content, u.name, r.createdAt
-      order by r.createdAt desc
-      """)
-  Page<ReplyResponseDto> findRepliesLatest(
-      @Param("boardId") Long boardId,
-      @Param("email") String email,
-      Pageable pageable);
-
-  @Query("""
-      select new com.music.music.board.dto.ReplyResponseDto(
-          r.replyId,
-          r.content,
-          u.name,
-          count(rl),
-          sum(case when rl.user.email = :email then 1 else 0 end),
-          r.createdAt
-      )
-      from Reply r
-      join r.user u
-      left join ReplyLike rl on rl.reply.replyId = r.replyId
-      where r.board.boardId = :boardId
-      group by r.replyId, r.content, u.name, r.createdAt
-      order by count(rl) desc, r.createdAt desc
-      """)
-  Page<ReplyResponseDto> findRepliesWithLikeInfo(
-      @Param("boardId") Long boardId,
-      @Param("email") String email,
-      Pageable pageable);
-}
->>>>>>> origin/feature/jylee_2

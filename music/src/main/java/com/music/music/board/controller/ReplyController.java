@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 public class ReplyController {
   private final ReplyService replyService;
 
-<<<<<<< HEAD
     // 댓글 작성
     @PostMapping("/{boardId}/replies")
     public Long createReply(
@@ -45,30 +44,4 @@ public class ReplyController {
         @RequestBody ReplyCreateDto dto) {
         replyService.updateReply(replyId, email, dto);
     }
-=======
-  // 댓글 작성
-  @PostMapping("/{boardId}/replies")
-  public Long createReply(
-      @PathVariable("boardId") Long boardId,
-      @RequestParam("email") String email,
-      @RequestBody ReplyCreateDto dto) {
-    return replyService.createReply(boardId, email, dto);
-  }
-
-  // 댓글 삭제
-  @DeleteMapping("/replies/{replyId}")
-  public void deleteReply(
-      @PathVariable("replyId") Long replyId,
-      @RequestParam("email") String email) {
-    replyService.deleteReply(replyId, email);
-  }
-
-  @PutMapping("/replies/{replyId}")
-  public void updateReply(
-      @PathVariable("replyId") Long replyId,
-      @RequestParam("email") String email,
-      @RequestBody ReplyCreateDto dto) {
-    replyService.updateReply(replyId, email, dto);
-  }
->>>>>>> origin/feature/jylee_2
 }

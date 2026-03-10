@@ -6,10 +6,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-<<<<<<< HEAD
-import org.springframework.stereotype.Service;
-
-=======
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -18,15 +14,12 @@ import net.nurigo.sdk.message.model.Message;
 import net.nurigo.sdk.message.request.SingleMessageSendingRequest;
 import net.nurigo.sdk.message.service.DefaultMessageService;
 
->>>>>>> origin/feature/jylee_2
 @Service
 public class SmsVerificationService {
 
   private static final long EXPIRE_SECONDS = 180; // 3분
   private static final SecureRandom random = new SecureRandom();
 
-<<<<<<< HEAD
-=======
   private final DefaultMessageService messageService;
   private final String fromNumber;
 
@@ -38,7 +31,6 @@ public class SmsVerificationService {
     this.fromNumber = fromNumber;
   }
 
->>>>>>> origin/feature/jylee_2
   /**
    * key: phoneNumber(normalized)
    * value: VerificationData(code, expireAt)
@@ -46,11 +38,7 @@ public class SmsVerificationService {
   private final Map<String, VerificationData> store = new ConcurrentHashMap<>();
 
   /**
-<<<<<<< HEAD
-   * ✅ SMS 인증 완료된 번호 저장소
-=======
    * SMS 인증 완료된 번호 저장소
->>>>>>> origin/feature/jylee_2
    * - CI 발급은 이 verified를 통과한 번호만 가능
    */
   private final Set<String> verified = ConcurrentHashMap.newKeySet();
@@ -63,12 +51,6 @@ public class SmsVerificationService {
 
     store.put(phone, new VerificationData(code, expireAt));
 
-<<<<<<< HEAD
-    // Mock이므로 서버 로그에 찍는다 (실서비스 절대 금지)
-    System.out.println("[MOCK-SMS] phone=" + phone + ", code=" + code + ", expireAt=" + expireAt);
-
-    return new SmsSendResult(true, "인증번호가 발송되었습니다.", code);
-=======
     Message message = new Message();
     message.setFrom(fromNumber);
     message.setTo(phone);
@@ -76,7 +58,6 @@ public class SmsVerificationService {
     messageService.sendOne(new SingleMessageSendingRequest(message));
 
     return new SmsSendResult(true, "인증번호가 발송되었습니다.", null);
->>>>>>> origin/feature/jylee_2
   }
 
   public VerifyResult verifyCode(String rawPhoneNumber, String inputCode) {

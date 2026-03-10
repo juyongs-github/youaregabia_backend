@@ -29,4 +29,11 @@ public interface BoardRepository extends JpaRepository<Board, Long>{
     Page<Board> findByDeletedFalse(Pageable pageable);
 
     Optional<Board> findByBoardIdAndDeletedFalse(Long boardId);
+
+    // 자유게시판 전체 조회
+    Page<Board> findByDeletedFalseAndBoardType(BoardType boardType, Pageable pageable); 
+
+    // 자유게시판 키워드 검색
+    Page<Board> findByDeletedFalseAndBoardTypeAndTitleContaining(
+    BoardType boardType, String keyword, Pageable pageable);
 }

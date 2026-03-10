@@ -5,5 +5,6 @@ public enum BoardGenre {
     POP,
     KPOP,
     HIPHOP,
-    ROCK
+    ROCK,
+    FREE
 }

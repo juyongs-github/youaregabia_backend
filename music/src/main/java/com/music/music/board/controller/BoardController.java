@@ -2,6 +2,7 @@ package com.music.music.board.controller;
 
 import java.util.List;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,36 +33,37 @@ public class BoardController {
     @GetMapping("")
     public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,
         @RequestParam(required = false) String keyword,
-        @RequestParam(required = false) String genre) {
-        log.info("전체 조회 신청 {},{}", keyword,genre);
+        @RequestParam(required = false) String genre,
+        @RequestParam(required = false) String boardType) {
+        log.info("전체 조회 신청 {},{},{}", keyword,genre,boardType);
         // 키워드는 필수가 아님
-        PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword, genre);
+        PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword, genre,boardType);
         return result;
     }
 
     
 
     @GetMapping("/{boardId}")
-    public BoardDto getBoardDetail(@PathVariable Long boardId,  @RequestParam(required = false) String email, PageRequestDTO dto) {
+    public BoardDto getBoardDetail(@PathVariable Long boardId,  @AuthenticationPrincipal String email, PageRequestDTO dto) {
         log.info("상세 조회 신청 {}, {},{}",boardId,email,dto.getPage());
         return boardService.getBoardDetail(boardId, email,dto);
     }
 
     @PostMapping("/add")
-    public Long createBoard(@RequestParam("email") String email,@RequestBody BoardDto dto) {
+    public Long createBoard(@AuthenticationPrincipal String email,@RequestBody BoardDto dto) {
         log.info("게시글 생성 {}", dto);
         return boardService.createBoard(email, dto);
     }
 
     @PutMapping("update/{boardId}")
     public void updateBoard(
-        @PathVariable Long boardId,@RequestParam("email") String email,@RequestBody BoardDto dto) {
+        @PathVariable Long boardId,@AuthenticationPrincipal String email,@RequestBody BoardDto dto) {
         log.info("게시글 수정 {}", dto);
         boardService.updateBoard(boardId, email, dto);
     }
 
     @DeleteMapping("delete/{boardId}")
-    public void deleteBoard(@PathVariable Long boardId,@RequestParam("email") String email) {
+    public void deleteBoard(@PathVariable Long boardId,@AuthenticationPrincipal String email) {
         log.info("게시글 삭제 {}", boardId);
         boardService.deleteBoard(boardId, email);
     }

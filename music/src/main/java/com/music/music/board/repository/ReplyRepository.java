@@ -26,6 +26,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
         r.replyId,
         r.content,
         u.name,
+        u.email,
         (select count(rl1) from ReplyLike rl1 where rl1.reply = r), 
         (select count(rl2) from ReplyLike rl2 where rl2.reply = r and rl2.user.email = :email),
         r.createdAt,
@@ -44,6 +45,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
         r.replyId,
         r.content,
         u.name,
+        u.email,
         (select count(rl1) from ReplyLike rl1 where rl1.reply = r),
         (select count(rl2) from ReplyLike rl2 where rl2.reply = r and rl2.user.email = :email),
         r.createdAt,
@@ -58,7 +60,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
     // 대댓글 조회 (부모 댓글 ID로)
     @Query("""
         select new com.music.music.board.dto.ReplyResponseDto(
-            r.replyId, r.content, u.name,
+            r.replyId, r.content, u.name,u.email,
             (select count(rl1) from ReplyLike rl1 where rl1.reply = r),
             (select count(rl2) from ReplyLike rl2 where rl2.reply = r and rl2.user.email = :email),
             r.createdAt, r.deleted)

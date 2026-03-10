@@ -1,5 +1,6 @@
 package com.music.music.board.controller;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,7 +25,7 @@ public class ReplyController {
     @PostMapping("/{boardId}/replies")
     public Long createReply(
             @PathVariable Long boardId,
-            @RequestParam String email,
+            @AuthenticationPrincipal String email,
             @RequestBody ReplyCreateDto dto) {
         return replyService.createReply(boardId, email, dto);
     }
@@ -33,14 +34,14 @@ public class ReplyController {
     @DeleteMapping("/replies/{replyId}")
     public void deleteReply(
             @PathVariable Long replyId,
-            @RequestParam String email) {
+            @AuthenticationPrincipal String email) {
         replyService.deleteReply(replyId, email);
     }
 
     @PutMapping("/replies/{replyId}")
     public void updateReply(
         @PathVariable Long replyId,
-        @RequestParam String email,
+        @AuthenticationPrincipal String email,
         @RequestBody ReplyCreateDto dto) {
         replyService.updateReply(replyId, email, dto);
     }

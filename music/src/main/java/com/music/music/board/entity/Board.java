@@ -60,7 +60,13 @@ public class Board extends BaseEntity {
   private String content;
 
   @Column(nullable = false)
+  @Builder.Default 
   private int viewCount = 0;
+
+  // Board 엔티티에 추가
+  @Column(nullable = false)
+  @Builder.Default
+  private int likeCount = 0;
 
     // Soft Delete
     @Column(nullable = false)
@@ -82,5 +88,8 @@ public class Board extends BaseEntity {
     }
     public void increaseViewCount() {
     this.viewCount++;
+  }
+    public void increaseLikeCount() {
+    this.likeCount++;
   }
 }

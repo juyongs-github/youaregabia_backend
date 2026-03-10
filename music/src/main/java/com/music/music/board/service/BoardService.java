@@ -38,7 +38,7 @@ public class BoardService {
     private final ReplyService replyService;
 
 
-    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto, String keyword, String genre) {
+    public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto, String keyword, String genre, String boardType) {
         log.info(" 요청 - page: {}, size: {}", dto.getPage(), dto.getSize());
         
         Page<Board> result = null;
@@ -49,30 +49,29 @@ public class BoardService {
 
         boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
         boolean hasGenre = genre != null && !genre.isBlank();
+        boolean hasType = boardType != null && !boardType.isBlank();
 
         // keyword가 있다면 검색, 없으면 전체 조회
 
-        if (hasGenre) {
-
-        BoardGenre boardGenre = BoardGenre.valueOf(genre);
-
+        if (hasType) {
+        BoardType type = BoardType.valueOf(boardType);
         if (hasKeyword) {
-            result = boardRepository
-                    .findByDeletedFalseAndBoardGenreAndTitleContaining(
-                            boardGenre, keyword.trim(), pageable);
+            result = boardRepository.findByDeletedFalseAndBoardTypeAndTitleContaining(type, keyword.trim(), pageable);
         } else {
-            result = boardRepository
-                    .findByDeletedFalseAndBoardGenre(boardGenre, pageable);
+            result = boardRepository.findByDeletedFalseAndBoardType(type, pageable);
         }
-
-        } else {    
-
+    } else if (hasGenre) {
+        BoardGenre boardGenre = BoardGenre.valueOf(genre);
         if (hasKeyword) {
-            result = boardRepository
-                    .findByDeletedFalseAndTitleContaining(keyword.trim(), pageable);
+            result = boardRepository.findByDeletedFalseAndBoardGenreAndTitleContaining(boardGenre, keyword.trim(), pageable);
         } else {
-            result = boardRepository
-                    .findByDeletedFalse(pageable);
+            result = boardRepository.findByDeletedFalseAndBoardGenre(boardGenre, pageable);
+        }
+    } else {
+        if (hasKeyword) {
+            result = boardRepository.findByDeletedFalseAndTitleContaining(keyword.trim(), pageable);
+        } else {
+            result = boardRepository.findByDeletedFalse(pageable);
         }
     }
 

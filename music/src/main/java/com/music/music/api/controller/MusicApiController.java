@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.music.music.api.entity.SongDTO;
+import com.music.music.api.repository.SongRepository;
 import com.music.music.api.service.MusicApiService;
+import com.music.music.playlist.entity.Song;
 
 @RestController
 public class MusicApiController {
@@ -20,6 +22,9 @@ public class MusicApiController {
 
   @Autowired
   MusicApiService musicApiService;
+
+  @Autowired
+  SongRepository songRepository;
 
   @GetMapping("/api/init")
   public ResponseEntity<String> saveInitialSongInfo() {
@@ -44,5 +49,22 @@ public class MusicApiController {
   public List<SongDTO> getSearchSongList(
       @RequestParam("q") String query) {
     return musicApiService.getSearchSongList(query);
+  }
+
+  @GetMapping("/api/random")
+public ResponseEntity<SongDTO> getRandomSong() {
+    Song song = songRepository.findRandomSong();
+    SongDTO dto = SongDTO.builder()
+        .id(song.getId())
+        .trackName(song.getTrackName())
+        .artistName(song.getArtistName())
+        .previewUrl(song.getPreviewUrl())
+        .imgUrl(song.getImgUrl())
+        .releaseDate(song.getReleaseDate())
+        .durationMs(song.getDurationMs())
+        .genreName(song.getGenreName())
+        .build();
+    
+    return ResponseEntity.ok(dto);
   }
 }

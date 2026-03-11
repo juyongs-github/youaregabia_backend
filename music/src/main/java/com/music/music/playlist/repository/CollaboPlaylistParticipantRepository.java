@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import com.music.music.playlist.entity.CollaboPlaylistParticipant;
 
 public interface CollaboPlaylistParticipantRepository extends JpaRepository<CollaboPlaylistParticipant, Long> {
+    void deleteBySuggestedBy_Id(Long userId);
 
     @Query("select p from CollaboPlaylistParticipant p join fetch p.song join fetch p.suggestedBy where p.playlist.id = :playlistId")
     List<CollaboPlaylistParticipant> findByPlaylistIdWithSongAndUser(Long playlistId);

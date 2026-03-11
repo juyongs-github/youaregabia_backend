@@ -4,6 +4,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.music.music.admin.UserLoginLog;
+import com.music.music.admin.UserLoginLogRepository;
 import com.music.music.auth.dto.LoginRequest;
 import com.music.music.auth.dto.LoginResponse;
 import com.music.music.auth.dto.RegisterRequest;
@@ -13,9 +15,11 @@ import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 import com.music.music.user.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -37,6 +41,7 @@ public class AuthController {
   private final LocalFileUploader fileUploader;
   private final UserRepository userRepository;
   private final JwtUtil jwtUtil;
+  private final UserLoginLogRepository loginLogRepository;
 
   // 회원가입
   @PostMapping("/register")
@@ -47,10 +52,19 @@ public class AuthController {
 
   // 로그인
   @PostMapping("/login")
-  public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
+  public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request, HttpServletRequest httpRequest) {
     User user = userService.login(request);
 
     String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getName(), user.getRole().name());
+
+    loginLogRepository.save(UserLoginLog.builder()
+        .userId(user.getId())
+        .name(user.getName())
+        .email(user.getEmail())
+        .loginType("NORMAL")
+        .ip(httpRequest.getRemoteAddr())
+        .loginAt(LocalDateTime.now())
+        .build());
 
     LoginResponse response = LoginResponse.builder()
         .email(user.getEmail())

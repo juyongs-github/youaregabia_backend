@@ -11,6 +11,7 @@ import com.music.music.board.dto.ReplyResponseDto;
 import com.music.music.board.entity.Reply;
 
 public interface ReplyRepository extends JpaRepository<Reply, Long>{
+    void deleteByUser_Id(Long userId);
      // 특정 게시글의 댓글 조회 (최신순)
     Page<Reply> findByBoard_BoardIdOrderByCreatedAtDesc(Long boardId, Pageable pageable);
 

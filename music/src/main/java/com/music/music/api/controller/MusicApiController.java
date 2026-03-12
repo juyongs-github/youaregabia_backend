@@ -1,10 +1,13 @@
 package com.music.music.api.controller;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,7 +55,7 @@ public class MusicApiController {
   }
 
   @GetMapping("/api/random")
-public ResponseEntity<SongDTO> getRandomSong() {
+  public ResponseEntity<SongDTO> getRandomSong() {
     Song song = songRepository.findRandomSong();
     SongDTO dto = SongDTO.builder()
         .id(song.getId())
@@ -64,7 +67,27 @@ public ResponseEntity<SongDTO> getRandomSong() {
         .durationMs(song.getDurationMs())
         .genreName(song.getGenreName())
         .build();
-    
+
     return ResponseEntity.ok(dto);
   }
+
+  @GetMapping("/api/randoms")
+  public ResponseEntity<List<SongDTO>> getRandomSongs(@RequestParam int limit) {
+    List<Song> songs = songRepository.findRandomSongs(limit);
+    List<SongDTO> dtos = new ArrayList<>();
+    for (Song song : songs) {
+      dtos.add(SongDTO.builder()
+          .id(song.getId())
+          .trackName(song.getTrackName())
+          .artistName(song.getArtistName())
+          .previewUrl(song.getPreviewUrl())
+          .imgUrl(song.getImgUrl())
+          .releaseDate(song.getReleaseDate())
+          .durationMs(song.getDurationMs())
+          .genreName(song.getGenreName())
+          .build());
+    }
+    return ResponseEntity.ok(dtos);
+  }
+
 }

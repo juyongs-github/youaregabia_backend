@@ -1,6 +1,7 @@
 package com.music.music.admin;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.music.music.board.repository.BoardRepository;
+import com.music.music.board.repository.ReplyRepository;
 import com.music.music.user.entity.Role;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
@@ -24,6 +27,9 @@ import lombok.RequiredArgsConstructor;
 public class AdminController {
 
   private final UserRepository userRepository;
+  private final UserLoginLogRepository loginLogRepository;
+  private final BoardRepository boardRepository;
+  private final ReplyRepository replyRepository;
 
   // 전체 유저 목록 조회
   @GetMapping("/users")
@@ -50,6 +56,34 @@ public class AdminController {
     return ResponseEntity.ok().build();
   }
 
+  // 접속 로그 조회
+  @GetMapping("/logs/login")
+  public ResponseEntity<List<UserLoginLog>> getLoginLogs() {
+    return ResponseEntity.ok(loginLogRepository.findTop100ByOrderByLoginAtDesc());
+  }
+
+  // 활동 로그 조회 (게시글 + 댓글)
+  @GetMapping("/logs/activity")
+  public ResponseEntity<List<ActivityLogDto>> getActivityLogs() {
+    List<ActivityLogDto> combined = new ArrayList<>();
+
+    boardRepository.findAll().stream()
+        .filter(b -> !b.isDeleted())
+        .forEach(b -> combined.add(new ActivityLogDto(
+            "게시글", b.getUser().getName(), b.getUser().getEmail(),
+            b.getTitle(), b.getCreatedAt())));
+
+    replyRepository.findAll().stream()
+        .filter(r -> !r.isDeleted())
+        .forEach(r -> combined.add(new ActivityLogDto(
+            "댓글", r.getUser().getName(), r.getUser().getEmail(),
+            r.getContent().length() > 30 ? r.getContent().substring(0, 30) + "..." : r.getContent(),
+            r.getCreatedAt())));
+
+    combined.sort((a, b) -> b.createdAt().compareTo(a.createdAt()));
+    return ResponseEntity.ok(combined.subList(0, Math.min(100, combined.size())));
+  }
+
   public record UserSummaryDto(
       Long id,
       String name,
@@ -57,5 +91,12 @@ public class AdminController {
       String phoneNumber,
       String role,
       Integer state,
+      LocalDateTime createdAt) {}
+
+  public record ActivityLogDto(
+      String type,
+      String name,
+      String email,
+      String content,
       LocalDateTime createdAt) {}
 }

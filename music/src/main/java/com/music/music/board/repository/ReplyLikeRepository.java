@@ -12,4 +12,6 @@ public interface ReplyLikeRepository extends JpaRepository<ReplyLike, Long>{
     void deleteByReply_ReplyIdAndUser_Email(Long replyId, String email);
 
     long countByReply_ReplyId(Long replyId);
+
+    void deleteByUser_Id(Long userId);
 }

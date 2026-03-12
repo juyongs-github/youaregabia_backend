@@ -12,6 +12,7 @@ import com.music.music.board.entity.BoardGenre;
 import com.music.music.board.entity.BoardType;
 
 public interface BoardRepository extends JpaRepository<Board, Long>{
+    void deleteByUser_Id(Long userId);
     // 제목 완전일치
     Page<Board> findByDeletedFalseAndTitle(String title, Pageable pageable);
 

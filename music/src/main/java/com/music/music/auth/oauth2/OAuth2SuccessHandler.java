@@ -3,6 +3,7 @@ package com.music.music.auth.oauth2;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,8 +15,11 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
+import com.music.music.admin.UserLoginLog;
+import com.music.music.admin.UserLoginLogRepository;
 import com.music.music.user.entity.User;
 import com.music.music.user.entity.UserSocialAccount;
+import com.music.music.user.repository.UserRepository;
 import com.music.music.user.repository.UserSocialAccountRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,6 +32,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
   private final PendingSocialStore pendingSocialStore;
   private final UserSocialAccountRepository socialAccountRepository;
+  private final UserLoginLogRepository loginLogRepository;
+  private final UserRepository userRepository;
 
   @Value("${app.frontend.url}")
   private String frontendUrl;
@@ -51,6 +57,16 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
       // Hibernate lazy proxy에서 getId()는 DB 조회 없이 가능
       Long userId = existing.get().getUser().getId();
       pendingSocialStore.storeSession(token, userId);
+
+      userRepository.findById(userId).ifPresent(u -> loginLogRepository.save(UserLoginLog.builder()
+          .userId(u.getId())
+          .name(u.getName())
+          .email(u.getEmail() != null ? u.getEmail() : "")
+          .loginType(provider.toUpperCase())
+          .ip(request.getRemoteAddr())
+          .loginAt(LocalDateTime.now())
+          .build()));
+
       response.sendRedirect(frontendUrl + "/oauth2/callback?token=" + token);
     } else {
       // 신규 유저 -> 본인인증 페이지로 (이름 pre-fill)

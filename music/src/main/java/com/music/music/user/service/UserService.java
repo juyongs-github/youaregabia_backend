@@ -11,6 +11,13 @@ import com.music.music.auth.dto.LoginRequest;
 import com.music.music.auth.dto.RegisterRequest;
 import com.music.music.auth.dto.SocialRegisterRequest;
 import com.music.music.auth.oauth2.OAuth2UserInfo;
+import com.music.music.board.repository.BoardRepository;
+import com.music.music.board.repository.ReplyLikeRepository;
+import com.music.music.board.repository.ReplyRepository;
+import com.music.music.notification.repository.NotificationRepository;
+import com.music.music.playlist.repository.CollaboPlaylistParticipantRepository;
+import com.music.music.playlist.repository.PlaylistRepository;
+import com.music.music.review.repository.ReviewRepository;
 import com.music.music.user.entity.User;
 import com.music.music.user.entity.UserSocialAccount;
 import com.music.music.user.repository.UserRepository;
@@ -26,6 +33,13 @@ public class UserService {
   private final UserRepository userRepository;
   private final UserSocialAccountRepository socialAccountRepository;
   private final PasswordEncoder passwordEncoder;
+  private final ReplyLikeRepository replyLikeRepository;
+  private final ReplyRepository replyRepository;
+  private final BoardRepository boardRepository;
+  private final NotificationRepository notificationRepository;
+  private final CollaboPlaylistParticipantRepository collaboParticipantRepository;
+  private final PlaylistRepository playlistRepository;
+  private final ReviewRepository reviewRepository;
 
   private static final LocalDate MIN_BIRTH_DATE = LocalDate.of(1920, 1, 1);
 
@@ -181,7 +195,18 @@ public class UserService {
     String normalizedEmail = normalizeEmail(email);
     User user = userRepository.findByEmail(normalizedEmail)
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-    userRepository.delete(user);
+    Long userId = user.getId();
+
+    // 연관 데이터를 FK 의존 순서대로 삭제
+    notificationRepository.deleteByReceiver_Id(userId);
+    replyLikeRepository.deleteByUser_Id(userId);
+    replyRepository.deleteByUser_Id(userId);
+    boardRepository.deleteByUser_Id(userId);
+    collaboParticipantRepository.deleteBySuggestedBy_Id(userId);
+    reviewRepository.deleteByUserId(userId);
+    playlistRepository.deleteByUserId(userId);
+
+    userRepository.delete(user); // socialAccounts는 CascadeType.ALL로 자동 삭제
   }
 
   @Transactional(readOnly = true)

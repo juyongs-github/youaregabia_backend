@@ -21,4 +21,5 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
     // 상세 조회
     Optional<Playlist> findByIdAndUserId(Long playlistId, Long userId);
 
+    void deleteByUserId(Long userId);
 }

@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -81,6 +82,22 @@ public class PlaylistSongController {
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(409).body(e.getMessage());
+        }
+    }
+
+    // reason 수정 (등록자만)
+    @PatchMapping("/songs/{playlistSongId}/reason")
+    public ResponseEntity<Void> updateReason(
+            @PathVariable Long playlistSongId,
+            @RequestParam String email,
+            @RequestParam String reason) {
+        try {
+            playlistSongService.updateReason(playlistSongId, email, reason);
+            return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(403).build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 

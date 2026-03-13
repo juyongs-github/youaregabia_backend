@@ -24,8 +24,8 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
     @Query("SELECT p FROM Playlist p WHERE p.type = 'COLLABORATIVE' AND p.deadline IS NOT NULL AND p.deadline < :now")
     List<Playlist> findExpiredCollaborativePlaylists(@Param("now") LocalDateTime now);
 
-    // 전체 조회
-    List<Playlist> findAllByUserId(Long userId);
+    // 전체 조회 (내 플레이리스트만)
+    List<Playlist> findAllByUserIdAndType(Long userId, PlaylistType type);
 
     // 상세 조회
     Optional<Playlist> findByIdAndUserId(Long playlistId, Long userId);

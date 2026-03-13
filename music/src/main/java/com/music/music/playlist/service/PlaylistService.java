@@ -1,7 +1,9 @@
 package com.music.music.playlist.service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -15,9 +17,12 @@ import com.music.music.board.common.service.FileService;
 import com.music.music.playlist.dto.CollaboPlaylistResponseDto;
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.entity.Playlist;
+import com.music.music.playlist.entity.PlaylistImport;
 import com.music.music.playlist.entity.PlaylistLike;
+import com.music.music.playlist.entity.PlaylistSong;
 import com.music.music.playlist.entity.Song;
 import com.music.music.playlist.entity.constant.PlaylistType;
+import com.music.music.playlist.repository.PlaylistImportRepository;
 import com.music.music.playlist.repository.PlaylistLikeRepository;
 import com.music.music.playlist.repository.PlaylistRepository;
 import com.music.music.playlist.repository.PlaylistSongRepository;
@@ -36,6 +41,7 @@ public class PlaylistService {
     private final PlaylistSongRepository playlistSongRepository;
     private final PlaylistSongVoteRepository playlistSongVoteRepository;
     private final PlaylistLikeRepository playlistLikeRepository;
+    private final PlaylistImportRepository playlistImportRepository;
     private final SongRepository songRepository;
     private final FileService fileService;
     private final UserRepository userRepository;
@@ -126,7 +132,7 @@ public class PlaylistService {
     @Transactional(readOnly = true)
     public List<PlaylistDTO> getAllPlaylists(Long userId) {
 
-        return playlistRepository.findAllByUserId(userId)
+        return playlistRepository.findAllByUserIdAndType(userId, PlaylistType.MYPLAYLIST)
                 .stream()
                 .map(this::toDto)
                 .toList();
@@ -137,10 +143,16 @@ public class PlaylistService {
     public CollaboPlaylistResponseDto getCollabPlaylist(Long playlistId, String email) {
         Playlist p = playlistRepository.findById(playlistId)
                 .orElseThrow(() -> new IllegalArgumentException("플레이리스트를 찾을 수 없습니다."));
-        boolean hasLiked = (email != null && !email.isBlank())
-                && userRepository.findByEmail(email)
-                        .map(u -> playlistLikeRepository.existsByPlaylistIdAndUserId(playlistId, u.getId()))
-                        .orElse(false);
+        boolean hasLiked = false;
+        boolean hasImported = false;
+        if (email != null && !email.isBlank()) {
+            hasLiked = userRepository.findByEmail(email)
+                    .map(u -> playlistLikeRepository.existsByPlaylistIdAndUserId(playlistId, u.getId()))
+                    .orElse(false);
+            hasImported = userRepository.findByEmail(email)
+                    .map(u -> playlistImportRepository.existsByPlaylistIdAndUserId(playlistId, u.getId()))
+                    .orElse(false);
+        }
         return CollaboPlaylistResponseDto.builder()
                 .id(p.getId())
                 .title(p.getTitle())
@@ -153,6 +165,7 @@ public class PlaylistService {
                 .participantCount(playlistSongRepository.countDistinctSuggestorsByPlaylistId(p.getId()))
                 .likeCount(playlistLikeRepository.countByPlaylistId(p.getId()))
                 .hasLiked(hasLiked)
+                .hasImported(hasImported)
                 .deadline(p.getDeadline())
                 .deadlinePassed(p.isDeadlinePassed())
                 .createdAt(p.getCreatedAt())
@@ -170,6 +183,10 @@ public class PlaylistService {
                 ? Set.copyOf(playlistLikeRepository.findLikedPlaylistIdsByEmailAndPlaylistIds(playlistIds, email))
                 : Set.of();
 
+        Set<Long> importedIds = (email != null && !email.isBlank())
+                ? Set.copyOf(playlistImportRepository.findImportedPlaylistIdsByEmailAndPlaylistIds(playlistIds, email))
+                : Set.of();
+
         return playlists.stream()
                 .map(p -> CollaboPlaylistResponseDto.builder()
                         .id(p.getId())
@@ -183,6 +200,7 @@ public class PlaylistService {
                         .participantCount(playlistSongRepository.countDistinctSuggestorsByPlaylistId(p.getId()))
                         .likeCount(playlistLikeRepository.countByPlaylistId(p.getId()))
                         .hasLiked(likedIds.contains(p.getId()))
+                        .hasImported(importedIds.contains(p.getId()))
                         .deadline(p.getDeadline())
                         .deadlinePassed(p.isDeadlinePassed())
                         .createdAt(p.getCreatedAt())
@@ -265,6 +283,54 @@ public class PlaylistService {
         return toDto(playlist);
     }
 
+    // 공동 플레이리스트 -> 내 플레이리스트로 추가
+    public Long importCollabo(Long collaboPlaylistId, String email) {
+        Playlist source = playlistRepository.findById(collaboPlaylistId)
+                .orElseThrow(() -> new IllegalArgumentException("플레이리스트를 찾을 수 없습니다."));
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        // 투표수 맵 (playlistSongId → voteCount)
+        Map<Long, Long> voteCountMap = playlistSongVoteRepository.countVotesByPlaylistId(collaboPlaylistId)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]));
+
+        // 투표순 상위 10곡 Song 추출
+        List<Song> top10Songs = playlistSongRepository.findByPlaylistIdWithSong(collaboPlaylistId)
+                .stream()
+                .sorted(Comparator.<PlaylistSong, Long>comparing(
+                        ps -> voteCountMap.getOrDefault(ps.getId(), 0L), Comparator.reverseOrder()))
+                .limit(10)
+                .map(PlaylistSong::getSong)
+                .toList();
+
+        // 새 일반 플레이리스트 생성
+        Playlist newPlaylist = Playlist.builder()
+                .user(user)
+                .type(PlaylistType.MYPLAYLIST)
+                .title(source.getTitle())
+                .description(source.getDescription())
+                .imageUrl(source.getImageUrl())
+                .build();
+
+        for (Song song : top10Songs) {
+            newPlaylist.addSong(song);
+        }
+
+        playlistRepository.save(newPlaylist);
+
+        // import 이력 저장
+        playlistImportRepository.save(PlaylistImport.builder()
+                .playlist(source)
+                .user(user)
+                .build());
+
+        return newPlaylist.getId();
+    }
+
     /*
      * =========================
      * DELETE
@@ -278,6 +344,7 @@ public class PlaylistService {
         // FK 의존 순서대로 삭제
         playlistSongVoteRepository.deleteByPlaylistId(id); // playlist_song_vote
         playlistLikeRepository.deleteByPlaylistId(id);     // playlist_like
+        playlistImportRepository.deleteByPlaylistId(id);   // playlist_import
         playlistRepository.deleteById(id);                 // playlist (cascade로 playlist_song, review 삭제)
     }
 }

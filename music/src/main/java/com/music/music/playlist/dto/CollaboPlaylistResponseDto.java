@@ -24,6 +24,7 @@ public class CollaboPlaylistResponseDto {
     private int participantCount;
     private int likeCount;
     private boolean hasLiked;
+    private boolean hasImported;
     private LocalDateTime deadline;
     private boolean deadlinePassed;
     private LocalDateTime createdAt;

@@ -184,6 +184,18 @@ public class PlaylistSongService {
                 .build());
     }
 
+    // ─── reason 수정 (등록자만) ────────────────────────────────
+    public void updateReason(Long playlistSongId, String userEmail, String reason) {
+        PlaylistSong ps = playlistSongRepository.findById(playlistSongId)
+                .orElseThrow(() -> new IllegalArgumentException("수록곡을 찾을 수 없습니다."));
+
+        if (ps.getSuggestedBy() == null || !ps.getSuggestedBy().getEmail().equals(userEmail)) {
+            throw new IllegalStateException("등록자만 추천 이유를 수정할 수 있습니다.");
+        }
+
+        ps.updateReason(reason);
+    }
+
     // ─── 투표 취소 ─────────────────────────────────────────────
     public void unvote(Long playlistSongId, String userEmail) {
         User user = userRepository.findByEmail(userEmail)

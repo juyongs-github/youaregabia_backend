@@ -16,38 +16,24 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
-@ToString(exclude = { "song", "playlist" })
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "playlist_id", "song_id" }))
-public class PlaylistSong extends BaseEntity {
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "playlist_id", "user_id" }))
+public class PlaylistImport extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "song_id")
-    private Song song;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "playlist_id")
     private Playlist playlist;
 
-    // 곡을 등록한 유저 (null = 작성자 직접 추가)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
-    private User suggestedBy;
-
-    // 곡 추가 이유 (공동 플레이리스트)
-    private String reason;
-
-    public void updateReason(String reason) {
-        this.reason = reason;
-    }
+    private User user;
 }

@@ -15,8 +15,9 @@ import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
 import com.music.music.notification.repository.NotificationRepository;
-import com.music.music.playlist.repository.CollaboPlaylistParticipantRepository;
 import com.music.music.playlist.repository.PlaylistRepository;
+import com.music.music.playlist.repository.PlaylistSongRepository;
+import com.music.music.playlist.repository.PlaylistSongVoteRepository;
 import com.music.music.review.repository.ReviewRepository;
 import com.music.music.user.entity.User;
 import com.music.music.user.entity.UserSocialAccount;
@@ -37,8 +38,9 @@ public class UserService {
   private final ReplyRepository replyRepository;
   private final BoardRepository boardRepository;
   private final NotificationRepository notificationRepository;
-  private final CollaboPlaylistParticipantRepository collaboParticipantRepository;
   private final PlaylistRepository playlistRepository;
+  private final PlaylistSongRepository playlistSongRepository;
+  private final PlaylistSongVoteRepository playlistSongVoteRepository;
   private final ReviewRepository reviewRepository;
 
   private static final LocalDate MIN_BIRTH_DATE = LocalDate.of(1920, 1, 1);
@@ -202,7 +204,8 @@ public class UserService {
     replyLikeRepository.deleteByUser_Id(userId);
     replyRepository.deleteByUser_Id(userId);
     boardRepository.deleteByUser_Id(userId);
-    collaboParticipantRepository.deleteBySuggestedBy_Id(userId);
+    playlistSongVoteRepository.deleteByUserId(userId);
+    playlistSongRepository.clearSuggestedByUserId(userId);
     reviewRepository.deleteByUserId(userId);
     playlistRepository.deleteByUserId(userId);
 

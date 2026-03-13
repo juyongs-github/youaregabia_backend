@@ -22,22 +22,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Getter
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "playlist_id", "song_id", "user_id" }))
-public class CollaboPlaylistParticipant extends BaseEntity {
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "playlist_song_id", "user_id" }))
+public class PlaylistSongVote extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "playlist_id")
-    private Playlist playlist;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "song_id")
-    private Song song;
+    @JoinColumn(name = "playlist_song_id")
+    private PlaylistSong playlistSong;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
-    private User suggestedBy;
+    private User user;
 }

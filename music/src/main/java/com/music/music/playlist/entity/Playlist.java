@@ -8,6 +8,8 @@ import com.music.music.playlist.entity.constant.PlaylistType;
 import com.music.music.review.entity.Review;
 import com.music.music.user.entity.User;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -67,6 +69,12 @@ public class Playlist extends BaseEntity {
   // 선택사항 (공동 플레이리스트 제작 시 필요)
   private String genre;
 
+  private LocalDateTime deadline;
+
+  public boolean isDeadlinePassed() {
+    return deadline != null && LocalDateTime.now().isAfter(deadline);
+  }
+
   // 곡 추가 메서드
   public void addSong(Song song) {
     PlaylistSong playlistSong = PlaylistSong.builder()
@@ -88,5 +96,9 @@ public class Playlist extends BaseEntity {
 
   public void changeImageUrl(String imageUrl) {
     this.imageUrl = imageUrl;
+  }
+
+  public void changeDeadline(LocalDateTime deadline) {
+      this.deadline = deadline;
   }
 }

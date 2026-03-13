@@ -8,7 +8,6 @@ import com.music.music.playlist.repository.PlaylistRepository;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +19,28 @@ import java.util.List;
 public class ReviewService {
     @Autowired
     private ReviewRepository reviewRepository;
-    
+
     @Autowired
     private PlaylistRepository playlistRepository;
-    
+
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    private ReviewDto toDto(Review review) {
+        return ReviewDto.builder()
+                .id(review.getId())
+                .playlistId(review.getPlaylist().getId())
+                .playlistTitle(review.getPlaylist().getTitle())
+                .imageUrl(review.getPlaylist().getImageUrl())
+                .userId(review.getUser().getId())
+                .userName(review.getUser().getName())
+                .userEmail(review.getUser().getEmail())
+                .content(review.getContent())
+                .rating(review.getRating())
+                .createdAt(review.getCreatedAt())
+                .updatedAt(review.getUpdatedAt())
+                .build();
+    }
 
     @Transactional
     public ReviewDto createReview(Long playlistId, String userEmail, String content, Integer rating) {
@@ -47,20 +59,18 @@ public class ReviewService {
 
         Review savedReview = reviewRepository.save(review);
 
-        return modelMapper.map(savedReview, ReviewDto.class);
+        return toDto(savedReview);
     }
 
     public List<ReviewDto> getAllReviews() {
         return reviewRepository.findAll().stream()
-                .map(review -> modelMapper.map(review, ReviewDto.class))
+                .map(this::toDto)
                 .toList();
     }
 
     public List<ReviewDto> getReviewsByPlaylist(Long playlistId) {
-        List<Review> reviews = reviewRepository.findByPlaylistId(playlistId);
-
-        return reviews.stream()
-                .map(review -> modelMapper.map(review, ReviewDto.class))
+        return reviewRepository.findByPlaylistId(playlistId).stream()
+                .map(this::toDto)
                 .toList();
     }
 
@@ -68,10 +78,8 @@ public class ReviewService {
         User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저가 없습니다."));
 
-        List<Review> reviews = reviewRepository.findByUserId(user.getId());
-
-        return reviews.stream()
-                .map(review -> modelMapper.map(review, ReviewDto.class))
+        return reviewRepository.findByUserId(user.getId()).stream()
+                .map(this::toDto)
                 .toList();
     }
 
@@ -83,7 +91,7 @@ public class ReviewService {
         review.updateContent(content);
         review.updateRating(rating);
 
-        return modelMapper.map(review, ReviewDto.class);
+        return toDto(review);
     }
 
     @Transactional

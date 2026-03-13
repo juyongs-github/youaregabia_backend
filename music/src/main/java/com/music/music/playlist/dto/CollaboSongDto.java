@@ -1,7 +1,5 @@
 package com.music.music.playlist.dto;
 
-import java.time.LocalDateTime;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,13 +9,18 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CollaboPlaylistParticipantDTO {
+public class CollaboSongDto {
 
-    private Long id;
+    private Long playlistSongId;
     private Long songId;
     private String trackName;
     private String artistName;
     private String imgUrl;
+    private String previewUrl;
+    private String genreName;
+    private String suggestedByName;
     private String suggestedByEmail;
-    private LocalDateTime createdAt;
+    private int voteCount;
+    private boolean hasVoted;
+    private String reason;
 }

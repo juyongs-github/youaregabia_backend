@@ -33,8 +33,13 @@ public class BoardDto {
     private String writerEmail;
     // reply 페이징을 위해서 PageResultDTO로 변경
     private PageResultDTO<ReplyResponseDto> replies;
+    private List<BoardSongDto> songs;
+    private List<Long> songIds;
+    private Long songId;
+    private int likeCount;
+    private boolean likedByMe;
 
-    public BoardDto(Board board, PageResultDTO<ReplyResponseDto> replies) {
+    public BoardDto(Board board, PageResultDTO<ReplyResponseDto> replies, List<BoardSongDto> songs) {
         this.boardId = board.getBoardId();
         this.title = board.getTitle();
         this.content = board.getContent();
@@ -49,20 +54,31 @@ public class BoardDto {
         this.writerEmail = board.getBoardType() == BoardType.FREE
         ? null  // 익명이라 수정/삭제 버튼 안 보이면 안 되니까
         : board.getUser().getEmail();
+        this.songs = songs;
+        this.likeCount = board.getLikeCount();
     }
     
     // 목록용 생성자 (댓글 없음)
     public BoardDto(Board board) {
-    this.boardId = board.getBoardId();
-    this.title = board.getTitle();
-    this.writer = board.getBoardType() == BoardType.FREE
-        ? "익명"
-        : board.getUser().getName();
-    this.createdAt = board.getCreatedAt();
-    this.boardType = board.getBoardType().name();
-    this.boardGenre = board.getBoardGenre().name();
-    this.viewCount = board.getViewCount();
-    this.writerEmail = board.getUser().getEmail();
-}
+        this.boardId = board.getBoardId();
+        this.title = board.getTitle();
+        this.writer = board.getBoardType() == BoardType.FREE
+            ? "익명"
+            : board.getUser().getName();
+        this.createdAt = board.getCreatedAt();
+        this.boardType = board.getBoardType().name();
+        this.boardGenre = board.getBoardGenre().name();
+        this.viewCount = board.getViewCount();
+        this.writerEmail = board.getBoardType() == BoardType.FREE
+            ? null
+            : board.getUser().getEmail();
+        this.songId = board.getBoardSongs().isEmpty()
+            ? null
+            : board.getBoardSongs().get(0).getSong().getId();
+        this.songs = board.getBoardSongs().stream()
+        .map(BoardSongDto::new)
+        .toList();
+        this.likeCount = board.getLikeCount();
+    }
     
 }

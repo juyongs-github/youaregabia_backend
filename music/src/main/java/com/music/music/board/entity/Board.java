@@ -29,7 +29,7 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = "replies")
+@ToString(exclude = {"replies", "boardSongs", "boardLikes"})
 @Builder
 @Table(name = "board")
 public class Board extends BaseEntity {
@@ -38,58 +38,67 @@ public class Board extends BaseEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long boardId;
 
-   // 작성자
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+  // 작성자
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "user_id", nullable = false)
+  private User user;
 
-    // 게시글 타입
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private BoardType boardType;
-    
-    // 게시글 장르
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private BoardGenre boardGenre;
+  // 게시글 타입
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 30)
+  private BoardType boardType;
+
+  // 게시글 장르
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false, length = 30)
+  private BoardGenre boardGenre;
 
   @Column(nullable = false, length = 100)
   private String title;
 
-  @Column(nullable = false)
+  @Column(nullable = false, columnDefinition = "MEDIUMTEXT")
   private String content;
 
   @Column(nullable = false)
   @Builder.Default 
   private int viewCount = 0;
 
-  // Board 엔티티에 추가
   @Column(nullable = false)
   @Builder.Default
   private int likeCount = 0;
 
-    // Soft Delete
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean deleted = false;
+  // Soft Delete
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean deleted = false;
 
-    @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    @Builder.Default
-    private List<Reply> replies = new ArrayList<>();
+  @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @Builder.Default
+  private List<Reply> replies = new ArrayList<>();
 
-    public void delete() {
-        this.deleted = true;
-    }
-
-    public void update(String title, String content, BoardGenre boardGenre) {
-    this.title = title;
-    this.content = content;
-    this.boardGenre = boardGenre;
-    }
-    public void increaseViewCount() {
-    this.viewCount++;
+  public void delete() {
+      this.deleted = true;
   }
-    public void increaseLikeCount() {
-    this.likeCount++;
+  public void update(String title, String content, BoardGenre boardGenre) {
+  this.title = title;
+  this.content = content;
+  this.boardGenre = boardGenre;
   }
+  public void increaseViewCount() {
+  this.viewCount++;
+  }
+  public void increaseLikeCount() {
+  this.likeCount++;
+  }
+  public void decreaseLikeCount() {
+    if (this.likeCount > 0) this.likeCount--;
+}
+
+  @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private List<BoardSong> boardSongs = new ArrayList<>();
+
+  @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @Builder.Default
+  private List<BoardLike> boardLikes = new ArrayList<>();
 }

@@ -51,25 +51,25 @@ public class Reply extends BaseEntity {
   @Builder.Default
   private int likeCount = 0;
 
-    // 대댓글 부모 참조 (null이면 최상위 댓글)
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_reply_id")
-    private Reply parentReply;
+  // 대댓글 부모 참조 (null이면 최상위 댓글)
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "parent_reply_id")
+  private Reply parentReply;
 
-    // Soft Delete
-    @Column(nullable = false)
-    @Builder.Default
-    private boolean deleted = false;
+  // Soft Delete
+  @Column(nullable = false)
+  @Builder.Default
+  private boolean deleted = false;
 
-    @OneToMany(mappedBy = "reply", cascade = CascadeType.REMOVE, orphanRemoval = true)
-    @Builder.Default
-    private List<ReplyLike> replyLikes = new ArrayList<>();
-
+  @OneToMany(mappedBy = "reply", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  @Builder.Default
+  private List<ReplyLike> replyLikes = new ArrayList<>();
+  
   public void updateContent(String content) {
-    this.content = content;
-    }
-    
-    public void delete() {
-    this.deleted = true;
-    }
+  this.content = content;
+  }
+  
+  public void delete() {
+  this.deleted = true;
+  }
 }

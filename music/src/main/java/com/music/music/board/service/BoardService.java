@@ -53,8 +53,13 @@ public class BoardService {
 
         // 리액트에서는 1,2,3 순서로 카운트하지만 백JPA에선 0,1,2 식으로 카운팅
         // 때문에 값이 넘어올 때 -1 해주어야한다.
+        Sort sort = switch (dto.getSort() != null ? dto.getSort() : "latest") {
+        case "views" -> Sort.by("viewCount").descending();
+        case "likes" -> Sort.by("likeCount").descending();
+        default -> Sort.by("boardId").descending(); // latest
+        };
         Pageable pageable = PageRequest.of(dto.getPage()-1, dto.getSize(),
-        Sort.by("boardId").descending());
+        sort);
 
         // keyword가 있다면 검색, 없으면 전체 조회
         BoardType typeEnum = (boardType != null && !boardType.isEmpty()) ? BoardType.valueOf(boardType) : null;

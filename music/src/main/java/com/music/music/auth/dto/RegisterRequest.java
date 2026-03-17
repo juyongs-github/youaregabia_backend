@@ -39,6 +39,8 @@ public class RegisterRequest {
   @NotBlank(message = "주소는 필수입니다.")
   private String address;
 
+  private String addressDetail;
+
   // ✅ [ADD] CI (본인인증 결과값)
   @NotBlank(message = "본인인증이 완료되지 않았습니다.")
   private String ci;

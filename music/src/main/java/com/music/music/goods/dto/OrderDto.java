@@ -11,6 +11,7 @@ import lombok.Getter;
 @Getter
 public class OrderDto {
     private Long orderId;
+    private String tossOrderId;
     private int totalAmount;
     private OrderStatus status;
     private String receiverName;
@@ -18,9 +19,12 @@ public class OrderDto {
     private String deliveryAddress;
     private LocalDateTime createdAt;
     private List<OrderItemDto> items;
+    private String carrierId;
+    private String trackingNumber;
 
     public OrderDto(GoodsOrder o) {
         this.orderId = o.getOrderId();
+        this.tossOrderId = o.getTossOrderId();
         this.totalAmount = o.getTotalAmount();
         this.status = o.getStatus();
         this.receiverName = o.getReceiverName();
@@ -28,6 +32,8 @@ public class OrderDto {
         this.deliveryAddress = o.getDeliveryAddress();
         this.createdAt = o.getCreatedAt();
         this.items = o.getOrderItems().stream().map(OrderItemDto::new).toList();
+        this.carrierId = o.getCarrierId();
+        this.trackingNumber = o.getTrackingNumber();
     }
 
     @Getter

@@ -46,11 +46,25 @@ public class GoodsOrder {
     @Column(nullable = false)
     private String deliveryAddress;
 
+    @Column(unique = true, nullable = false)
+    private String tossOrderId;
+
+    @Column(length = 50)
+    private String carrierId;
+
+    @Column(length = 100)
+    private String trackingNumber;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public void updateStatus(OrderStatus status) {
         this.status = status;
+    }
+
+    public void updateTracking(String carrierId, String trackingNumber) {
+        this.carrierId = carrierId;
+        this.trackingNumber = trackingNumber;
     }
 }

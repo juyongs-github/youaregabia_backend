@@ -14,6 +14,7 @@ import com.music.music.auth.oauth2.OAuth2UserInfo;
 import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
+import com.music.music.goods.repository.GoodsOrderRepository;
 import com.music.music.notification.repository.NotificationRepository;
 import com.music.music.playlist.repository.CollaboPlaylistParticipantRepository;
 import com.music.music.playlist.repository.PlaylistRepository;
@@ -37,6 +38,7 @@ public class UserService {
   private final ReplyRepository replyRepository;
   private final BoardRepository boardRepository;
   private final NotificationRepository notificationRepository;
+  private final GoodsOrderRepository goodsOrderRepository;
   private final CollaboPlaylistParticipantRepository collaboParticipantRepository;
   private final PlaylistRepository playlistRepository;
   private final ReviewRepository reviewRepository;
@@ -96,6 +98,7 @@ public class UserService {
         .birthDate(birthDate) // 반드시 들어가야 함
         .phoneNumber(normalizedPhone)
         .address(request.getAddress())
+        .addressDetail(request.getAddressDetail())
         .ci(request.getCi()) // CI값 추가
         .build();
 
@@ -198,6 +201,7 @@ public class UserService {
     Long userId = user.getId();
 
     // 연관 데이터를 FK 의존 순서대로 삭제
+    goodsOrderRepository.deleteAll(goodsOrderRepository.findByUser_Id(userId));
     notificationRepository.deleteByReceiver_Id(userId);
     replyLikeRepository.deleteByUser_Id(userId);
     replyRepository.deleteByUser_Id(userId);

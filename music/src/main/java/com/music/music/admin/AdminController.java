@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyRepository;
+import com.music.music.goods.dto.OrderDto;
+import com.music.music.goods.entity.OrderStatus;
+import com.music.music.goods.service.OrderService;
 import com.music.music.user.entity.Role;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
@@ -30,6 +33,7 @@ public class AdminController {
   private final UserLoginLogRepository loginLogRepository;
   private final BoardRepository boardRepository;
   private final ReplyRepository replyRepository;
+  private final OrderService orderService;
 
   // 전체 유저 목록 조회
   @GetMapping("/users")
@@ -82,6 +86,30 @@ public class AdminController {
 
     combined.sort((a, b) -> b.createdAt().compareTo(a.createdAt()));
     return ResponseEntity.ok(combined.subList(0, Math.min(100, combined.size())));
+  }
+
+  // 전체 주문 조회
+  @GetMapping("/orders")
+  public ResponseEntity<List<OrderDto>> getAllOrders() {
+    return ResponseEntity.ok(orderService.getAllOrders());
+  }
+
+  // 주문 상태 변경
+  @PatchMapping("/orders/{orderId}/status")
+  public ResponseEntity<Void> updateOrderStatus(
+      @PathVariable Long orderId,
+      @RequestBody Map<String, String> body) {
+    orderService.updateOrderStatus(orderId, OrderStatus.valueOf(body.get("status")));
+    return ResponseEntity.ok().build();
+  }
+
+  // 운송장 번호 등록
+  @PatchMapping("/orders/{orderId}/tracking")
+  public ResponseEntity<Void> updateTracking(
+      @PathVariable Long orderId,
+      @RequestBody Map<String, String> body) {
+    orderService.updateTracking(orderId, body.get("carrierId"), body.get("trackingNumber"));
+    return ResponseEntity.ok().build();
   }
 
   public record UserSummaryDto(

@@ -15,6 +15,8 @@ import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 import com.music.music.user.service.UserService;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -104,6 +106,20 @@ public class AuthController {
   public ResponseEntity<Void> resetPassword(@RequestBody Map<String, String> body) {
     userService.resetPassword(body.get("email"), body.get("phoneNumber"), body.get("newPassword"));
     return ResponseEntity.ok().build();
+  }
+
+  // 내 프로필 조회 (이름, 전화번호, 주소)
+  @GetMapping("/me")
+  public ResponseEntity<Map<String, String>> getMyProfile(
+      @AuthenticationPrincipal String email) {
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+    return ResponseEntity.ok(Map.of(
+        "name", user.getName() != null ? user.getName() : "",
+        "phoneNumber", user.getPhoneNumber() != null ? user.getPhoneNumber() : "",
+        "address", user.getAddress() != null ? user.getAddress() : "",
+        "addressDetail", user.getAddressDetail() != null ? user.getAddressDetail() : ""
+    ));
   }
 
   // 이미지 업로드

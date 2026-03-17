@@ -1,6 +1,7 @@
 package com.music.music.goods.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +10,7 @@ import com.music.music.goods.dto.OrderDto;
 import com.music.music.goods.entity.Goods;
 import com.music.music.goods.entity.GoodsOrder;
 import com.music.music.goods.entity.OrderItem;
+import com.music.music.goods.entity.OrderStatus;
 import com.music.music.goods.repository.GoodsOrderRepository;
 import com.music.music.goods.repository.GoodsRepository;
 import com.music.music.user.entity.User;
@@ -31,6 +33,7 @@ public class OrderService {
 
         GoodsOrder order = GoodsOrder.builder()
                 .user(user)
+                .tossOrderId(UUID.randomUUID().toString())
                 .totalAmount(req.getTotalAmount())
                 .receiverName(req.getReceiverName())
                 .receiverPhone(req.getReceiverPhone())
@@ -65,5 +68,24 @@ public class OrderService {
     public List<OrderDto> getMyOrders(String email) {
         return goodsOrderRepository.findByUser_EmailOrderByCreatedAtDesc(email)
                 .stream().map(OrderDto::new).toList();
+    }
+
+    public List<OrderDto> getAllOrders() {
+        return goodsOrderRepository.findAllByOrderByCreatedAtDesc()
+                .stream().map(OrderDto::new).toList();
+    }
+
+    @Transactional
+    public void updateOrderStatus(Long orderId, OrderStatus status) {
+        GoodsOrder order = goodsOrderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+        order.updateStatus(status);
+    }
+
+    @Transactional
+    public void updateTracking(Long orderId, String carrierId, String trackingNumber) {
+        GoodsOrder order = goodsOrderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+        order.updateTracking(carrierId, trackingNumber);
     }
 }

@@ -68,6 +68,9 @@ public class User {
   @Column(length = 255)
   private String address;
 
+  @Column(name = "address_detail", length = 255)
+  private String addressDetail;
+
   // CI (본인인증 고유값)
   @Column(name = "ci", nullable = false, length = 255, unique = true)
   private String ci;

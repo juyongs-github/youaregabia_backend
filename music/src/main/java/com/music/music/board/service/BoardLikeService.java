@@ -8,8 +8,11 @@ import com.music.music.board.entity.Board;
 import com.music.music.board.entity.BoardLike;
 import com.music.music.board.repository.BoardLikeRepository;
 import com.music.music.board.repository.BoardRepository;
+import com.music.music.user.entity.PointType;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
+import com.music.music.user.service.UserPointService;
+
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -20,6 +23,7 @@ public class BoardLikeService {
     private final BoardRepository boardRepository;
     private final BoardLikeRepository boardLikeRepository;
     private final UserRepository userRepository;
+    private final UserPointService userPointService;
 
     public Map<String, Object> toggleLike(Long boardId, String email) {
 
@@ -35,6 +39,7 @@ public class BoardLikeService {
         if (alreadyLiked) {
             boardLikeRepository.deleteByBoard_BoardIdAndUser_Email(boardId, email);
             board.decreaseLikeCount(); 
+            userPointService.deductPoint(board.getUser().getEmail(), 2);
         } else {
             boardLikeRepository.save(
                     BoardLike.builder()
@@ -42,6 +47,7 @@ public class BoardLikeService {
                             .user(user)
                             .build());
              board.increaseLikeCount();  
+                userPointService.addPoint(board.getUser().getEmail(), PointType.BOARD_LIKE_RECEIVED);
         }
 
         return Map.of(

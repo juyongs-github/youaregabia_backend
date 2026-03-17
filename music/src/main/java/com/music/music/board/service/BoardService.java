@@ -28,9 +28,11 @@ import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.BoardSongRepository;
 import com.music.music.board.repository.ReplyRepository;
 import com.music.music.playlist.entity.Song;
+import com.music.music.user.entity.PointType;
 import com.music.music.user.entity.Role;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
+import com.music.music.user.service.UserPointService;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -46,6 +48,7 @@ public class BoardService {
     private final SongRepository songRepository;
     private final BoardSongRepository boardSongRepository;
     private final BoardLikeRepository boardLikeRepository;
+    private final UserPointService userPointService;
 
 
     public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto, String keyword, String genre, String boardType) {
@@ -188,6 +191,10 @@ public class BoardService {
 
             boardSongRepository.saveAll(boardSongs);  // 한 번에 저장
         }
+        userPointService.addPoint(email,
+        BoardType.valueOf(dto.getBoardType()) == BoardType.CRITIC
+        ? PointType.CRITIC_WRITE
+        : PointType.BOARD_WRITE);
 
     return saved.getBoardId();
     }

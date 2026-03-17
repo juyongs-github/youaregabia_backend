@@ -22,7 +22,7 @@ public class PageRequestDTO {
 
     private String keyword;
 
-     // 정렬 기준: latest | likes
+     // 정렬 기준: latest | likes | views
     private String sort;
 
     public String getSort() {

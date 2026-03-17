@@ -1,7 +1,5 @@
 package com.music.music.board.controller;
 
-import java.util.List;
-
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -67,6 +65,20 @@ public class BoardController {
         log.info("게시글 삭제 {}", boardId);
         boardService.deleteBoard(boardId, email);
     }
+
+    @GetMapping("/critic")
+    public PageResultDTO<BoardDto> getCriticBoards(
+        @RequestParam Long songId,
+        PageRequestDTO dto) {
+        return boardService.getCriticBoards(songId, dto);
+    }
+
+    @GetMapping("/critic/list")
+    public PageResultDTO<BoardDto> getCriticList(
+    PageRequestDTO dto,
+    @RequestParam(required = false) String keyword) {
+    return boardService.getCriticList(dto, keyword);
+}
 
 
 }

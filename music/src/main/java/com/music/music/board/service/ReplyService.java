@@ -10,8 +10,10 @@ import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyLikeRepository;
 import com.music.music.board.repository.ReplyRepository;
 import com.music.music.notification.service.NotificationService;
+import com.music.music.user.entity.PointType;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
+import com.music.music.user.service.UserPointService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +26,8 @@ public class ReplyService {
     private final UserRepository userRepository;
     private final ReplyLikeRepository replyLikeRepository;
     private final NotificationService notificationService;
+    private final UserPointService userPointService;
+
 
     public Long createReply(Long boardId, String email, ReplyCreateDto dto) {
 
@@ -55,6 +59,10 @@ public class ReplyService {
             notificationService.createNotification(boardAuthor, msg, boardId);
         }
 
+        userPointService.addPoint(email,
+        dto.getParentReplyId() != null
+        ? PointType.CHILD_REPLY_WRITE
+        : PointType.REPLY_WRITE);
         return reply.getReplyId();
     }
 

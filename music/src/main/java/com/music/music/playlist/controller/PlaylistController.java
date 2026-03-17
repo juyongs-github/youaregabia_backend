@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,25 +33,31 @@ public class PlaylistController {
   private final PlaylistSongService playlistSongService;
   private final UserRepository userRepository;
 
+  // 유저 정보 불러오기
+  private User getCurrentUser() {
+    String email = (String) SecurityContextHolder.getContext()
+        .getAuthentication().getPrincipal();
+    return userRepository.findByEmail(email)
+        .orElseThrow(() -> new IllegalStateException("유저 없음"));
+  }
+
   // 플레이리스트 전체 조회 (/playlist/all + GET)
   @GetMapping("/all")
-  public List<PlaylistDTO> getAllPlaylists(@RequestParam("email") String email) {
-    User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new IllegalStateException("유저 없음"));
+  public List<PlaylistDTO> getAllPlaylists() {
+    User user = getCurrentUser();
     return playlistService.getAllPlaylists(user.getId());
   }
 
   // playlist_song 테이블 매핑 될 수 있도록 수정
   @PostMapping
   public ResponseEntity<PlaylistDTO> createPlaylist(
-      @RequestParam(name = "email") String email,
       @RequestPart(name = "file", required = false) MultipartFile file,
       @RequestParam(name = "title") String title,
       @RequestParam(name = "description") String description,
       @RequestParam(name = "songIds", required = false) List<Long> songIds,
       @RequestParam(name = "type") String type,
       @RequestParam(name = "genre", required = false) String genre) {
-    User user = userRepository.findByEmail(email).orElseThrow(() -> new IllegalStateException("해당 유저 없음"));
+    User user = getCurrentUser();
     try {
       PlaylistDTO playlistDTO = playlistService.createPlaylist(file, title, description, songIds, user, type, genre);
       return ResponseEntity.ok(playlistDTO);
@@ -62,9 +68,8 @@ public class PlaylistController {
 
   // 플레이리스트 상세 조회 (/playlist/{id} + GET)
   @GetMapping("/{id}")
-  public PlaylistDTO getPlaylist(@PathVariable("id") Long id, @RequestParam("email") String email) {
-    User user = userRepository.findByEmail(email)
-        .orElseThrow(() -> new IllegalStateException("유저 없음"));
+  public PlaylistDTO getPlaylist(@PathVariable("id") Long id) {
+    User user = getCurrentUser();
     return playlistService.getPlaylist(id, user.getId());
   }
 
@@ -87,8 +92,8 @@ public class PlaylistController {
   }
 
   /*
-      공동 플레이리스트 관련 API
-  */
+   * 공동 플레이리스트 관련 API
+   */
 
   // 공동 플레이리스트 전체 조회 (/playlist/collabo/all + GET)
   @GetMapping("/collabo/all")

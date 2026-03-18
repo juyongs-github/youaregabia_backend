@@ -11,16 +11,26 @@ public class RestClientConfig {
     @Qualifier("lastFmRestClient")
     public RestClient lastFmRestClient() {
         return RestClient.builder()
-            .baseUrl("http://ws.audioscrobbler.com/2.0/")
-            .defaultHeader("User-Agent", "MusicRecommendApp")
-            .build();
+                .baseUrl("http://ws.audioscrobbler.com/2.0/")
+                .defaultHeader("User-Agent", "MusicRecommendApp")
+                .build();
     }
 
+    // 아이튠즈(미리 듣기용)
     @Bean
     @Qualifier("itunesRestClient")
     public RestClient itunesRestClient() {
         return RestClient.builder()
-            .baseUrl("https://itunes.apple.com")
-            .build();
+                .baseUrl("https://itunes.apple.com")
+                .build();
+    }
+
+    // 스포티파이
+    @Bean
+    @Qualifier("spotifyRestClient")
+    public RestClient spotifyRestClient() {
+        return RestClient.builder()
+                .baseUrl("https://api.spotify.com")
+                .build();
     }
 }

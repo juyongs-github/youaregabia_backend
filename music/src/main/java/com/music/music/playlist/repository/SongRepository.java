@@ -1,4 +1,4 @@
-package com.music.music.api.repository;
+package com.music.music.playlist.repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 import com.music.music.playlist.entity.Song;
 
 public interface SongRepository extends JpaRepository<Song, Long> {
-    Optional<Song> findById(Long id);
 
     @Query(value = "SELECT * FROM song ORDER BY RAND() LIMIT 1", nativeQuery = true)
     Song findRandomSong();

@@ -17,12 +17,13 @@ import org.springframework.web.client.RestClient;
 import com.google.gson.Gson;
 import com.music.music.api.dto.ArtistDTO;
 import com.music.music.api.dto.ItunesSearchResponse;
+import com.music.music.api.dto.SpotifySearchResponse;
 import com.music.music.api.dto.SimilarArtistResponse;
 import com.music.music.api.dto.SimilarTracksResponse;
 import com.music.music.api.dto.TrackDTO;
-import com.music.music.api.entity.SongDTO;
-import com.music.music.api.repository.SongRepository;
+import com.music.music.playlist.dto.SongDTO;
 import com.music.music.playlist.entity.Song;
+import com.music.music.playlist.repository.SongRepository;
 
 @Service
 public class MusicApiService {
@@ -37,8 +38,15 @@ public class MusicApiService {
     private RestClient lastFmRestClient;
 
     @Autowired
+    @Qualifier("spotifyRestClient")
+    private RestClient spotifyRestClient;
+
+    @Autowired
     @Qualifier("itunesRestClient")
     private RestClient itunesRestClient;
+
+    @Autowired
+    private SpotifyTokenService spotifyTokenService;
 
     @Autowired
     private SongRepository songRepository;
@@ -46,11 +54,35 @@ public class MusicApiService {
     @Autowired
     private ModelMapper modelMapper;
 
-    // 곡 정보 가져오기
-    public ItunesSearchResponse getTrackInfo(String term, String attribute, int limit) {
+    // Spotify 검색
+    public SpotifySearchResponse getTrackInfo(String term, String type, int limit) {
+        try {
+            String accessToken = spotifyTokenService.getAccessToken();
+            logger.info("[getTrackInfo] 검색어: {}, limit: {}", term, limit);
+
+            String body = spotifyRestClient.get()
+                    .uri(url -> url.path("/v1/search")
+                            .queryParam("q", term)
+                            .queryParam("type", "track")
+                            .queryParam("market", "KR")
+                            .queryParam("limit", limit)
+                            .build())
+                    .header("Authorization", "Bearer " + accessToken)
+                    .retrieve()
+                    .body(String.class);
+
+            return gson.fromJson(body, SpotifySearchResponse.class);
+        } catch (Exception e) {
+            logger.error("[getTrackInfo] Spotify API 곡 정보 가져오기 실패 - 검색어: {}, error: {}", term, e.getMessage());
+            return null;
+        }
+    }
+
+    // iTunes 검색 전용
+    private ItunesSearchResponse getItunesTrackInfo(String term, String attribute, int limit) {
         try {
             String body = itunesRestClient.get()
-                    .uri((url) -> url.path("/search")
+                    .uri(url -> url.path("/search")
                             .queryParam("term", term)
                             .queryParam("country", "KR")
                             .queryParam("media", "music")
@@ -63,16 +95,73 @@ public class MusicApiService {
 
             return gson.fromJson(body, ItunesSearchResponse.class);
         } catch (Exception e) {
-            logger.error("[getTrackInfo] itunes API 곡 정보 가져오기 실패 - 검색어: {}, error: {}", term, e.getMessage());
+            logger.error("[getItunesTrackInfo] iTunes 검색 실패 - 검색어: {}, error: {}", term, e.getMessage());
             return null;
         }
     }
 
-    // 유사 곡 리스트 (곡 추천 메인)
+    // iTunes previewUrl 조회
+    private String getPreviewUrlFromItunes(String trackName, String artistName) {
+        try {
+            String term = trackName + " " + artistName;
+            String body = itunesRestClient.get()
+                    .uri(url -> url.path("/search")
+                            .queryParam("term", term)
+                            .queryParam("country", "KR")
+                            .queryParam("media", "music")
+                            .queryParam("entity", "song")
+                            .queryParam("limit", 1)
+                            .build())
+                    .retrieve()
+                    .body(String.class);
+
+            ItunesSearchResponse response = gson.fromJson(body, ItunesSearchResponse.class);
+            if (response != null && !response.getResults().isEmpty()) {
+                return response.getResults().get(0).getPreviewUrl();
+            }
+        } catch (Exception e) {
+            logger.error("[getPreviewUrlFromItunes] iTunes 미리듣기 조회 실패 - {}: {}", trackName, e.getMessage());
+        }
+        return null;
+    }
+
+    // ✅ iTunes 곡 + Spotify 앨범아트 조합 헬퍼
+    private SongDTO buildSongWithSpotifyArt(SongDTO itunesSong, String spotifyQuery) {
+        try {
+            SpotifySearchResponse spotifyResponse = getTrackInfo(spotifyQuery, "track", 1);
+
+            if (spotifyResponse != null
+                    && spotifyResponse.getTracks() != null
+                    && !spotifyResponse.getTracks().getItems().isEmpty()) {
+
+                String spotifyImgUrl = spotifyResponse.getTracks()
+                        .getItems().get(0).toSongDTO().getImgUrl();
+
+                if (spotifyImgUrl != null && !spotifyImgUrl.isEmpty()) {
+                    return SongDTO.builder()
+                            .id(itunesSong.getId())
+                            .trackName(itunesSong.getTrackName())
+                            .artistName(itunesSong.getArtistName())
+                            .previewUrl(itunesSong.getPreviewUrl())
+                            .imgUrl(spotifyImgUrl)
+                            .releaseDate(itunesSong.getReleaseDate())
+                            .durationMs(itunesSong.getDurationMs())
+                            .genreName(itunesSong.getGenreName())
+                            .build();
+                }
+            }
+        } catch (Exception e) {
+            logger.error("[buildSongWithSpotifyArt] Spotify 앨범아트 조회 실패 - {}: {}",
+                    itunesSong.getTrackName(), e.getMessage());
+        }
+        return itunesSong;
+    }
+
+    // last.fm 유사 곡
     public SimilarTracksResponse getSimilarTracks(String trackName, String artistName) {
         try {
             return lastFmRestClient.get()
-                    .uri((url) -> url.queryParam("method", "track.getSimilar")
+                    .uri(url -> url.queryParam("method", "track.getSimilar")
                             .queryParam("track", trackName)
                             .queryParam("artist", artistName)
                             .queryParam("api_key", lastFmApiKey)
@@ -81,17 +170,17 @@ public class MusicApiService {
                     .retrieve()
                     .body(SimilarTracksResponse.class);
         } catch (Exception e) {
-            logger.error("[getSimilarTracks] last.fm API 유사 곡 리스트 가져오기 실패 - 곡 이름: {}, 아티스트 이름: {}, error: {}",
-                    trackName, artistName, e.getMessage());
+            logger.error("[getSimilarTracks] last.fm 유사 곡 실패 - {}, {}, error: {}", trackName, artistName,
+                    e.getMessage());
             return null;
         }
     }
 
-    // 유사 아티스트 리스트 (곡 추천 대안)
+    // last.fm 유사 아티스트
     public SimilarArtistResponse getSimilarArtists(String artistName) {
         try {
             return lastFmRestClient.get()
-                    .uri((url) -> url.queryParam("method", "artist.getSimilar")
+                    .uri(url -> url.queryParam("method", "artist.getSimilar")
                             .queryParam("limit", "5")
                             .queryParam("artist", artistName)
                             .queryParam("api_key", lastFmApiKey)
@@ -100,19 +189,18 @@ public class MusicApiService {
                     .retrieve()
                     .body(SimilarArtistResponse.class);
         } catch (Exception e) {
-            logger.error("[getSimilarArtists] last.fm API 유사 아티스트 리스트 가져오기 실패 - 아티스트 이름: {}, error: {}", artistName,
-                    e.getMessage());
+            logger.error("[getSimilarArtists] last.fm 유사 아티스트 실패 - {}, error: {}", artistName, e.getMessage());
             return null;
         }
     }
 
-    // 초기 곡 정보 DB 저장 (곡 정보 확보)
+    // 초기 곡 정보 DB 저장
     @Transactional
     public void saveInitialSongInfo() {
         String[] terms = {
                 "뉴진스", "아일릿", "아이브", "르세라핌", "블랙핑크",
                 "방탄소년단", "에스파", "데이식스", "악동뮤지션", "QWER",
-                "블랙핑크", "트와이스", "레드벨벳", "엔믹스", "비와이",
+                "트와이스", "레드벨벳", "엔믹스", "비와이",
                 "볼빨간사춘기", "아이유", "태연", "헤이즈", "한로로",
                 "Taylor Swift", "Bruno Mars", "Ariana Grande", "Justin Bieber", "Rihanna",
                 "The Weeknd", "Billie Eilish", "Ed Sheeran", "Lady Gaga", "Coldplay",
@@ -121,160 +209,199 @@ public class MusicApiService {
 
         for (String term : terms) {
             try {
-                ItunesSearchResponse itunesSearchResponse = getTrackInfo(term, "artistTerm", 10);
+                ItunesSearchResponse itunesResponse = getItunesTrackInfo(term, "artistTerm", 10);
+                if (itunesResponse == null || itunesResponse.getResults().isEmpty())
+                    continue;
 
-                if (itunesSearchResponse == null) {
-                    return;
-                }
+                for (SongDTO itunesSong : itunesResponse.getResults()) {
+                    try {
+                        String cleanArtist = itunesSong.getArtistName()
+                                .replaceAll("\\s+", " ").trim();
+                        String cleanTrack = itunesSong.getTrackName()
+                                .replaceAll("\\s+", " ").trim();
 
-                List<SongDTO> songList = itunesSearchResponse.getResults();
+                        String spotifyQuery = "track:" + cleanTrack
+                                + " artist:" + cleanArtist;
 
-                for (SongDTO songDto : songList) {
-                    Song song = modelMapper.map(songDto, Song.class);
-                    songRepository.findById(songDto.getId())
-                            .orElseGet(() -> songRepository.save(song));
+                        SongDTO finalSong = buildSongWithSpotifyArt(itunesSong, spotifyQuery);
+
+                        Song song = modelMapper.map(finalSong, Song.class);
+                        songRepository.findById(finalSong.getId())
+                                .orElseGet(() -> songRepository.save(song));
+
+                    } catch (Exception e) {
+                        logger.error("[saveInitialSongInfo] 곡 처리 실패 - {}: {}",
+                                itunesSong.getTrackName(), e.getMessage());
+                    }
                 }
             } catch (Exception e) {
-                logger.error("[saveInitialSongInfo] 초기 곡 정보 DB 저장 실패 - error: {}", e.getMessage());
+                logger.error("[saveInitialSongInfo] 초기 곡 정보 DB 저장 실패 - term: {}, error: {}", term, e.getMessage());
             }
         }
     }
 
-    /**
-     * 추천 곡 리스트 가져오기
-     * 1. 유사 곡 기반 추천
-     * 2. 유사 아티스트 기반 추천
-     */
+    // 추천 곡 리스트
     @Transactional
     public List<SongDTO> getRecommendSongList(String trackName, String artistName) {
         List<SongDTO> resultList = new ArrayList<>();
-
         try {
-            // 유사 곡 기반 곡 리스트
-            List<SongDTO> similarTrackRecommendSongList = getSimilarTrackRecommendSongList(trackName, artistName);
-            // 유사 아티스트 기반 곡 리스트
-            List<SongDTO> similarArtistRecommendSongList = getSimilarArtistRecommendSongList(trackName, artistName);
+            List<SongDTO> similarTrackList = getSimilarTrackRecommendSongList(trackName, artistName);
+            List<SongDTO> similarArtistList = getSimilarArtistRecommendSongList(trackName, artistName);
 
-            // 리스트 값 세팅
-            if (!similarTrackRecommendSongList.isEmpty()) {
-                resultList = similarTrackRecommendSongList;
-            } else if (!similarArtistRecommendSongList.isEmpty()) {
-                resultList = similarArtistRecommendSongList;
+            if (!similarTrackList.isEmpty()) {
+                resultList = similarTrackList;
+            } else if (!similarArtistList.isEmpty()) {
+                resultList = similarArtistList;
             }
-
             return resultList;
         } catch (Exception e) {
-            logger.error("[getRecommendSongList] 추천 곡 리스트 가져오기 실패 - error: {}", e.getMessage());
+            logger.error("[getRecommendSongList] 추천 곡 리스트 실패 - error: {}", e.getMessage());
             return resultList;
         }
     }
 
-    // 유사곡 기반 추천 곡 리스트
+    // 유사곡 기반 추천
     private List<SongDTO> getSimilarTrackRecommendSongList(String trackName, String artistName) {
         List<SongDTO> resultList = new ArrayList<>();
-
         try {
             SimilarTracksResponse similarTracksResponse = getSimilarTracks(trackName, artistName);
+            if (similarTracksResponse == null)
+                return resultList;
 
-            if (similarTracksResponse != null) {
-                List<TrackDTO> similarTrackList = similarTracksResponse.getSimilarTracks().getTrack();
+            List<TrackDTO> similarTrackList = similarTracksResponse.getSimilarTracks().getTrack();
+            if (similarTrackList == null)
+                return resultList;
 
-                if (similarTrackList != null) {
-                    // 유사도가 0.7 이상인 곡들로 필터링
-                    List<TrackDTO> filterSimilarTrackList = similarTrackList.stream()
-                            .filter((track) -> track.getMatch() >= 0.7)
-                            .collect(Collectors.toList());
+            List<TrackDTO> filtered = similarTrackList.stream()
+                    .filter(track -> track.getMatch() >= 0.7)
+                    .collect(Collectors.toList());
 
-                    for (TrackDTO trackDTO : filterSimilarTrackList) {
-                        String term = trackDTO.getName() + "+" + trackDTO.getArtistDto().getName(); // 곡 이름 + 아티스트 이름
-                        ItunesSearchResponse itunesSearchResponse = getTrackInfo(term, "mixTerm", 1); // 해당 곡 정보 가져오기
+            for (TrackDTO trackDTO : filtered) {
+                try {
+                    String itunesQuery = trackDTO.getName() + " " + trackDTO.getArtistDto().getName();
+                    ItunesSearchResponse itunesResponse = getItunesTrackInfo(itunesQuery, "mixTerm", 1);
 
-                        // 가져오기 실패 시 skip
-                        if (itunesSearchResponse == null) {
-                            continue;
-                        }
+                    if (itunesResponse == null || itunesResponse.getResults().isEmpty())
+                        continue;
 
-                        SongDTO songDto = itunesSearchResponse.getResults().get(0);
+                    SongDTO itunesSong = itunesResponse.getResults().get(0);
 
-                        // DB에 추천 곡 정보 INSERT
-                        Song song = modelMapper.map(songDto, Song.class);
-                        songRepository.findById(songDto.getId())
-                                .orElseGet(() -> songRepository.save(song));
+                    String cleanArtist = itunesSong.getArtistName().replaceAll("\\s+", " ").trim();
+                    String cleanTrack = itunesSong.getTrackName().replaceAll("\\s+", " ").trim();
+                    String spotifyQuery = "track:" + cleanTrack + " artist:" + cleanArtist;
 
-                        resultList.add(songDto);
-                    }
+                    SongDTO songDto = buildSongWithSpotifyArt(itunesSong, spotifyQuery);
+
+                    Song song = modelMapper.map(songDto, Song.class);
+                    songRepository.findById(songDto.getId())
+                            .orElseGet(() -> songRepository.save(song));
+
+                    resultList.add(songDto);
+                } catch (Exception e) {
+                    logger.error("[getSimilarTrackRecommendSongList] 곡 처리 실패 - {}: {}",
+                            trackDTO.getName(), e.getMessage());
                 }
             }
-
             return resultList;
         } catch (Exception e) {
-            logger.error("[getSimilarTrackRecommendSongList] 유사곡 기반 추천 곡 리스트 가져오기 실패 - error: {}", e.getMessage());
+            logger.error("[getSimilarTrackRecommendSongList] 실패 - error: {}", e.getMessage());
             return resultList;
         }
     }
 
-    // 유사 아티스트 기반 추천 곡 리스트
+    // 유사 아티스트 기반 추천
     private List<SongDTO> getSimilarArtistRecommendSongList(String trackName, String artistName) {
         List<SongDTO> resultList = new ArrayList<>();
-
         try {
             SimilarArtistResponse similarArtistResponse = getSimilarArtists(artistName);
+            if (similarArtistResponse == null)
+                return resultList;
 
-            if (similarArtistResponse != null) {
-                List<ArtistDTO> similarArtistList = similarArtistResponse.getSimilarArtists().getArtist();
+            List<ArtistDTO> similarArtistList = similarArtistResponse.getSimilarArtists().getArtist();
+            if (similarArtistList == null)
+                return resultList;
 
-                if (similarArtistList != null) {
-                    // 유사도가 0.7 이상인 아티스트들로 필터링
-                    List<ArtistDTO> filterSimilarArtistList = similarArtistList.stream()
-                            .filter((artist) -> artist.getMatch() >= 0.7)
-                            .collect(Collectors.toList());
+            List<ArtistDTO> filtered = similarArtistList.stream()
+                    .filter(artist -> artist.getMatch() >= 0.7)
+                    .collect(Collectors.toList());
 
-                    for (ArtistDTO artistDTO : filterSimilarArtistList) {
-                        String term = artistDTO.getName();
-                        ItunesSearchResponse itunesSearchResponse = getTrackInfo(term, "artistTerm", 3); // 아티스트 당 3곡씩 가져오기
+            for (ArtistDTO artistDTO : filtered) {
+                try {
+                    ItunesSearchResponse itunesResponse = getItunesTrackInfo(artistDTO.getName(), "artistTerm", 3);
 
-                        // 가져오기 실패 시 skip
-                        if (itunesSearchResponse == null) {
-                            continue;
-                        }
+                    if (itunesResponse == null || itunesResponse.getResults().isEmpty())
+                        continue;
 
-                        List<SongDTO> songList = itunesSearchResponse.getResults();
-                        for (SongDTO songDto : songList) {
-                            // DB에 추천 곡 정보 INSERT
+                    for (SongDTO itunesSong : itunesResponse.getResults()) {
+                        try {
+                            String cleanArtist = itunesSong.getArtistName().replaceAll("\\s+", " ").trim();
+                            String cleanTrack = itunesSong.getTrackName().replaceAll("\\s+", " ").trim();
+                            String spotifyQuery = "track:" + cleanTrack + " artist:" + cleanArtist;
+
+                            SongDTO songDto = buildSongWithSpotifyArt(itunesSong, spotifyQuery);
+
                             Song song = modelMapper.map(songDto, Song.class);
                             songRepository.findById(songDto.getId())
                                     .orElseGet(() -> songRepository.save(song));
 
                             resultList.add(songDto);
+                        } catch (Exception e) {
+                            logger.error("[getSimilarArtistRecommendSongList] 곡 처리 실패 - {}: {}",
+                                    itunesSong.getTrackName(), e.getMessage());
                         }
                     }
+                } catch (Exception e) {
+                    logger.error("[getSimilarArtistRecommendSongList] 아티스트 처리 실패 - {}: {}",
+                            artistDTO.getName(), e.getMessage());
                 }
             }
-
             return resultList;
         } catch (Exception e) {
-            logger.error("[getSimilarArtistRecommendSongList] 유사 아티스트 기반 추천 곡 리스트 가져오기 실패 - error: {}", e.getMessage());
+            logger.error("[getSimilarArtistRecommendSongList] 실패 - error: {}", e.getMessage());
             return resultList;
         }
     }
 
-    // 유저 검색 곡 리스트 가져오기
+    // ✅ 유저 검색 곡 리스트 — iTunes 검색 + Spotify 앨범아트 병렬 처리
     public List<SongDTO> getSearchSongList(String query) {
         List<SongDTO> resultList = new ArrayList<>();
-        ItunesSearchResponse itunesSearchResponse = getTrackInfo(query, "songTerm", 30);
-    
-        if(itunesSearchResponse != null) {
-            List<SongDTO> songList = itunesSearchResponse.getResults();
-            for(SongDTO songDto : songList) {
-                // DB에 추천 곡 정보 INSERT
-                Song song = modelMapper.map(songDto, Song.class);
-                songRepository.findById(songDto.getId())
-                    .orElseGet(() -> songRepository.save(song));
 
-                resultList.add(songDto);
+        ItunesSearchResponse itunesResponse = getItunesTrackInfo(query, "songTerm", 50);
+        if (itunesResponse == null || itunesResponse.getResults().isEmpty()) {
+            return resultList;
+        }
+
+        // ✅ 병렬 처리 + 아티스트명/곡명 공백 정규화
+        resultList = itunesResponse.getResults().parallelStream()
+                .map(itunesSong -> {
+                    try {
+                        String cleanArtist = itunesSong.getArtistName()
+                                .replaceAll("\\s+", " ").trim();
+                        String cleanTrack = itunesSong.getTrackName()
+                                .replaceAll("\\s+", " ").trim();
+
+                        String spotifyQuery = "track:" + cleanTrack
+                                + " artist:" + cleanArtist;
+                        return buildSongWithSpotifyArt(itunesSong, spotifyQuery);
+                    } catch (Exception e) {
+                        logger.error("[getSearchSongList] 곡 처리 실패 - {}: {}",
+                                itunesSong.getTrackName(), e.getMessage());
+                        return itunesSong;
+                    }
+                })
+                .collect(Collectors.toList());
+
+        for (SongDTO finalSong : resultList) {
+            try {
+                Song song = modelMapper.map(finalSong, Song.class);
+                songRepository.findById(finalSong.getId())
+                        .orElseGet(() -> songRepository.save(song));
+            } catch (Exception e) {
+                logger.error("[getSearchSongList] DB 저장 실패 - {}: {}",
+                        finalSong.getTrackName(), e.getMessage());
             }
         }
-    
+
         return resultList;
     }
 }

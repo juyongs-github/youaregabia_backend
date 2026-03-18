@@ -26,59 +26,55 @@ import lombok.extern.log4j.Log4j2;
 public class BoardController {
     private final BoardService boardService;
 
-    
-
     @GetMapping("")
     public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto,
-        @RequestParam(required = false) String keyword,
-        @RequestParam(required = false) String genre,
-        @RequestParam(required = false) String boardType) {
-        log.info("전체 조회 신청 {},{},{}", keyword,genre,boardType);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String genre,
+            @RequestParam(required = false) String boardType) {
+        log.info("전체 조회 신청 {},{},{}", keyword, genre, boardType);
         // 키워드는 필수가 아님
-        PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword, genre,boardType);
+        PageResultDTO<BoardDto> result = boardService.getBoardList(dto, keyword, genre, boardType);
         return result;
     }
 
-    
-
     @GetMapping("/{boardId}")
-    public BoardDto getBoardDetail(@PathVariable Long boardId,  @AuthenticationPrincipal String email, PageRequestDTO dto) {
-        log.info("상세 조회 신청 {}, {},{}",boardId,email,dto.getPage());
-        return boardService.getBoardDetail(boardId, email,dto);
+    public BoardDto getBoardDetail(@PathVariable Long boardId, @AuthenticationPrincipal String email,
+            PageRequestDTO dto) {
+        log.info("상세 조회 신청 {}, {},{}", boardId, email, dto.getPage());
+        return boardService.getBoardDetail(boardId, email, dto);
     }
 
     @PostMapping("/add")
-    public Long createBoard(@AuthenticationPrincipal String email,@RequestBody BoardDto dto) {
+    public Long createBoard(@AuthenticationPrincipal String email, @RequestBody BoardDto dto) {
         log.info("게시글 생성 {}", dto);
         return boardService.createBoard(email, dto);
     }
 
     @PutMapping("update/{boardId}")
     public void updateBoard(
-        @PathVariable Long boardId,@AuthenticationPrincipal String email,@RequestBody BoardDto dto) {
+            @PathVariable Long boardId, @AuthenticationPrincipal String email, @RequestBody BoardDto dto) {
         log.info("게시글 수정 {}", dto);
         boardService.updateBoard(boardId, email, dto);
     }
 
     @DeleteMapping("delete/{boardId}")
-    public void deleteBoard(@PathVariable Long boardId,@AuthenticationPrincipal String email) {
+    public void deleteBoard(@PathVariable Long boardId, @AuthenticationPrincipal String email) {
         log.info("게시글 삭제 {}", boardId);
         boardService.deleteBoard(boardId, email);
     }
 
     @GetMapping("/critic")
     public PageResultDTO<BoardDto> getCriticBoards(
-        @RequestParam Long songId,
-        PageRequestDTO dto) {
+            @RequestParam Long songId,
+            PageRequestDTO dto) {
         return boardService.getCriticBoards(songId, dto);
     }
 
     @GetMapping("/critic/list")
     public PageResultDTO<BoardDto> getCriticList(
-    PageRequestDTO dto,
-    @RequestParam(required = false) String keyword) {
-    return boardService.getCriticList(dto, keyword);
-}
-
+            PageRequestDTO dto,
+            @RequestParam(required = false) String keyword) {
+        return boardService.getCriticList(dto, keyword);
+    }
 
 }

@@ -6,13 +6,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.music.music.api.repository.SongRepository;
 import com.music.music.board.common.service.FileService;
 import com.music.music.playlist.dto.PlaylistDTO;
 import com.music.music.playlist.entity.Playlist;
 import com.music.music.playlist.entity.Song;
 import com.music.music.playlist.entity.constant.PlaylistType;
 import com.music.music.playlist.repository.PlaylistRepository;
+import com.music.music.playlist.repository.SongRepository;
 import com.music.music.user.entity.User;
 
 import lombok.RequiredArgsConstructor;

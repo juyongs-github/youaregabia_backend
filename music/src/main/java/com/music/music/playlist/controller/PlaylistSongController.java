@@ -3,7 +3,7 @@ package com.music.music.playlist.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.music.music.api.entity.SongDTO;
+import com.music.music.playlist.dto.SongDTO;
 import com.music.music.playlist.service.PlaylistSongService;
 
 import lombok.RequiredArgsConstructor;

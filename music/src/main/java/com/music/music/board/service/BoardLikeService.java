@@ -39,15 +39,17 @@ public class BoardLikeService {
         if (alreadyLiked) {
             boardLikeRepository.deleteByBoard_BoardIdAndUser_Email(boardId, email);
             board.decreaseLikeCount(); 
-            userPointService.deductPoint(board.getUser().getEmail(), 2);
+            // 취소 시 — 누른 사람에게서 1pt 차감
+            userPointService.deductPoint(email, 1);
         } else {
             boardLikeRepository.save(
                     BoardLike.builder()
                             .board(board)
                             .user(user)
                             .build());
-             board.increaseLikeCount();  
-                userPointService.addPoint(board.getUser().getEmail(), PointType.BOARD_LIKE_RECEIVED);
+             board.increaseLikeCount();
+             // 좋아요 누를 때 — 누른 사람에게 LIKE_GIVEN 지급
+             userPointService.addLikeGivenPoint(email);
         }
 
         return Map.of(

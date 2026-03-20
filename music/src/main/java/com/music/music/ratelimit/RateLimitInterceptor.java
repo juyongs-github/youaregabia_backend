@@ -36,9 +36,10 @@ public class RateLimitInterceptor implements HandlerInterceptor{
         boolean allowed = rateLimiter.isAllowed(email, type);
         System.out.println(">>> isAllowed: " + allowed);
 
-        if (!allowed) {   // rateLimiter.isAllowed() 다시 호출하지 말고 변수 사용
-        throw new RateLimitExceededException(type);
-        }       
+        if (!allowed) {
+        long remainSeconds = rateLimiter.getRemainSeconds(email, type);
+        throw new RateLimitExceededException(type, remainSeconds);
+}
 
         return true;
     }

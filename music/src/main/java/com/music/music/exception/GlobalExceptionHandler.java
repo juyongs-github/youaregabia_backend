@@ -69,9 +69,10 @@ public class GlobalExceptionHandler {
 
   // 너무 잦은 게시글, 댓글, 좋아요 방지
   @ExceptionHandler(RateLimitExceededException.class)
-  public ResponseEntity<Map<String, String>> handleRateLimit(RateLimitExceededException e) {
+  public ResponseEntity<Map<String, Object>> handleRateLimit(RateLimitExceededException e) {
     return ResponseEntity
             .status(HttpStatus.TOO_MANY_REQUESTS)   // 429
-            .body(Map.of("message", e.getMessage()));
+            .body(Map.of("message", e.getMessage(),
+          "remainSeconds", e.getRemainSeconds()));
 }
 }

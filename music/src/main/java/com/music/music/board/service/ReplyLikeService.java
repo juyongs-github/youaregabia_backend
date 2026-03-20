@@ -33,19 +33,19 @@ public class ReplyLikeService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
 
-                // 좋아요 이미 눌렀는지 확인
+        // 좋아요 이미 눌렀는지 확인
         boolean alreadyLiked =
                 replyLikeRepository.existsByReply_ReplyIdAndUser_Email(replyId, email);
 
-                // 이미 눌렀으면 좋아요를 취소, 유저 포인트 가감
+        // 이미 눌렀으면 좋아요를 취소, 유저 포인트 가감
         if (alreadyLiked) {
         replyLikeRepository.deleteByReply_ReplyIdAndUser_Email(replyId, email);
-        // 취소 시 포인트 차감 (편법 방지)
-        userPointService.deductPoint(reply.getUser().getEmail(), 2);
+        // 취소 시 — 누른 사람에게서 1pt 차감
+        userPointService.deductPoint(email, 1);
         } else {
                 replyLikeRepository.save(ReplyLike.builder().reply(reply).user(user).build());
-                // 좋아요 받은 댓글 작성자에게 포인트 지급
-                userPointService.addPoint(reply.getUser().getEmail(), PointType.REPLY_LIKE_RECEIVED);
+                // 좋아요 누를 때 — 누른 사람에게 LIKE_GIVEN 지급
+                userPointService.addLikeGivenPoint(email);
         }
 
         long likeCount = replyLikeRepository.countByReply_ReplyId(replyId);

@@ -9,12 +9,11 @@ public enum PointType {
     BOARD_WRITE(10, "게시글 작성"),
     REPLY_WRITE(5, "댓글 작성"),
     CHILD_REPLY_WRITE(3, "대댓글 작성"),
-    BOARD_LIKE_RECEIVED(2, "게시글 좋아요 받기"),
     MUSIC_QUIZ(1, "음악 퀴즈"),
     ALBUM_QUIZ(1, "앨범 퀴즈"),
     CARD_QUIZ(1, "카드 퀴즈"),
     CRITIC_WRITE(20, "평론 작성"),
-    REPLY_LIKE_RECEIVED(2, "댓글 좋아요 받기"),
+    LIKE_GIVEN(1,    "좋아요 누르기"),          // 누른 사람 지급
     POINT_DEDUCT(-1, "포인트 차감");  // amount는 별도로 계산
     
 

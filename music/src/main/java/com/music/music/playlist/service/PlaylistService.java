@@ -132,7 +132,7 @@ public class PlaylistService {
     @Transactional(readOnly = true)
     public List<PlaylistDTO> getAllPlaylists(Long userId) {
 
-        return playlistRepository.findAllByUserIdAndType(userId, PlaylistType.MYPLAYLIST)
+        return playlistRepository.findAllByUserIdAndTypeIn(userId, List.of(PlaylistType.MYPLAYLIST, PlaylistType.RECOMMENDED))
                 .stream()
                 .map(this::toDto)
                 .toList();

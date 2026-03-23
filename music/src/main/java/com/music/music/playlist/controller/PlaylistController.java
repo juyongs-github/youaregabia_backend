@@ -52,7 +52,7 @@ public class PlaylistController {
             @RequestParam(required = false) List<Long> songIds,
             @RequestParam String type,
             @RequestParam(required = false) String genre,
-            @RequestParam LocalDateTime deadline) {
+            @RequestParam(required = false) LocalDateTime deadline) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("해당 유저 없음"));
         try {

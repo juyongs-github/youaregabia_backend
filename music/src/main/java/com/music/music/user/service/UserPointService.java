@@ -159,4 +159,31 @@ public class UserPointService {
     public void addLikeGivenPoint(String giverEmail) {
         addPoint(giverEmail, PointType.LIKE_GIVEN);
     }
+
+    // 관리자 포인트 조정 (양수=지급, 음수=차감)
+    public void adminAdjustPoint(Long userId, int amount) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("유저가 존재하지 않습니다."));
+
+        UserPoint userPoint = userPointRepository.findByUser_Id(userId)
+            .orElseGet(() -> userPointRepository.save(
+                UserPoint.builder().user(user).build()
+            ));
+
+        if (amount > 0) {
+            userPoint.addPoint(amount);
+            pointHistoryRepository.save(PointHistory.builder()
+                .user(user)
+                .pointType(PointType.ADMIN_GRANT)
+                .amount(amount)
+                .build());
+        } else if (amount < 0) {
+            userPoint.deductPoint(-amount);
+            pointHistoryRepository.save(PointHistory.builder()
+                .user(user)
+                .pointType(PointType.ADMIN_DEDUCT)
+                .amount(amount)
+                .build());
+        }
+    }
 }

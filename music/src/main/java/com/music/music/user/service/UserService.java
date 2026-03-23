@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.music.music.auth.dto.LoginRequest;
 import com.music.music.auth.dto.RegisterRequest;
+import com.music.music.common.AesUtil;
 import com.music.music.auth.dto.SocialRegisterRequest;
 import com.music.music.auth.oauth2.OAuth2UserInfo;
 import com.music.music.board.repository.BoardRepository;
@@ -21,6 +22,8 @@ import com.music.music.playlist.repository.PlaylistRepository;
 import com.music.music.review.repository.ReviewRepository;
 import com.music.music.user.entity.User;
 import com.music.music.user.entity.UserSocialAccount;
+import com.music.music.user.repository.PointHistoryRepository;
+import com.music.music.user.repository.UserPointRepository;
 import com.music.music.user.repository.UserRepository;
 import com.music.music.user.repository.UserSocialAccountRepository;
 
@@ -42,6 +45,9 @@ public class UserService {
   private final CollaboPlaylistParticipantRepository collaboParticipantRepository;
   private final PlaylistRepository playlistRepository;
   private final ReviewRepository reviewRepository;
+  private final PointHistoryRepository pointHistoryRepository;
+  private final UserPointRepository userPointRepository;
+  private final AesUtil aesUtil;
 
   private static final LocalDate MIN_BIRTH_DATE = LocalDate.of(1920, 1, 1);
 
@@ -71,8 +77,8 @@ public class UserService {
       throw new IllegalArgumentException("본인인증(CI)이 필요합니다.");
     }
 
-    // 2️⃣ CI 중복 체크
-    if (userRepository.existsByCi(request.getCi())) {
+    // 2️⃣ CI 중복 체크 (암호화값으로 비교)
+    if (userRepository.existsByCi(aesUtil.encrypt(request.getCi()))) {
       throw new IllegalArgumentException("이미 가입된 사용자입니다.");
     }
 
@@ -144,7 +150,7 @@ public class UserService {
   }
 
   public User registerSocialUser(SocialRegisterRequest request, OAuth2UserInfo oAuth2UserInfo) {
-    if (userRepository.existsByCi(request.ci())) {
+    if (userRepository.existsByCi(aesUtil.encrypt(request.ci()))) {
       throw new IllegalArgumentException("이미 가입된 사용자입니다.");
     }
 
@@ -174,7 +180,7 @@ public class UserService {
   }
 
   public User linkSocialUser(String ci, OAuth2UserInfo oAuth2UserInfo) {
-    User user = userRepository.findByCi(ci)
+    User user = userRepository.findByCi(aesUtil.encrypt(ci))
         .orElseThrow(() -> new IllegalArgumentException("해당 CI의 사용자를 찾을 수 없습니다."));
 
     boolean alreadyLinked = socialAccountRepository
@@ -209,6 +215,8 @@ public class UserService {
     collaboParticipantRepository.deleteBySuggestedBy_Id(userId);
     reviewRepository.deleteByUserId(userId);
     playlistRepository.deleteByUserId(userId);
+    pointHistoryRepository.deleteByUser_Id(userId);
+    userPointRepository.deleteByUser_Id(userId);
 
     userRepository.delete(user); // socialAccounts는 CascadeType.ALL로 자동 삭제
   }
@@ -216,7 +224,7 @@ public class UserService {
   @Transactional(readOnly = true)
   public String findEmail(String name, String phoneNumber) {
     String normalizedPhone = normalizePhone(phoneNumber);
-    User user = userRepository.findByNameAndPhoneNumber(name, normalizedPhone)
+    User user = userRepository.findByNameAndPhoneNumber(name, aesUtil.encrypt(normalizedPhone))
         .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
     return maskEmail(user.getEmail());
   }
@@ -225,7 +233,7 @@ public class UserService {
   public void resetPassword(String email, String phoneNumber, String newPassword) {
     String normalizedEmail = normalizeEmail(email);
     String normalizedPhone = normalizePhone(phoneNumber);
-    User user = userRepository.findByEmailAndPhoneNumber(normalizedEmail, normalizedPhone)
+    User user = userRepository.findByEmailAndPhoneNumber(normalizedEmail, aesUtil.encrypt(normalizedPhone))
         .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
     user.setPassword(passwordEncoder.encode(newPassword));
   }

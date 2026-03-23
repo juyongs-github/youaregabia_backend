@@ -54,10 +54,16 @@ public class MusicApiService {
     @Autowired
     private ModelMapper modelMapper;
 
-    // Spotify 검색
+    // Spotify 검색 (track-id 조회용으로만 사용)
     public SpotifySearchResponse getTrackInfo(String term, String type, int limit) {
         try {
             String accessToken = spotifyTokenService.getAccessToken();
+
+            if (accessToken == null) {
+                logger.warn("[Spotify] accessToken 없음 - /spotify/login 필요");
+                return null;
+            }
+
             logger.info("[getTrackInfo] 검색어: {}, limit: {}", term, limit);
 
             String body = spotifyRestClient.get()
@@ -125,36 +131,25 @@ public class MusicApiService {
         return null;
     }
 
-    // ✅ iTunes 곡 + Spotify 앨범아트 조합 헬퍼
-    private SongDTO buildSongWithSpotifyArt(SongDTO itunesSong, String spotifyQuery) {
-        try {
-            SpotifySearchResponse spotifyResponse = getTrackInfo(spotifyQuery, "track", 1);
+    // ✅ iTunes 이미지 해상도 업그레이드 (Spotify API 호출 없음)
+    private SongDTO upgradeImageResolution(SongDTO itunesSong) {
+        if (itunesSong.getImgUrl() == null)
+            return itunesSong;
 
-            if (spotifyResponse != null
-                    && spotifyResponse.getTracks() != null
-                    && !spotifyResponse.getTracks().getItems().isEmpty()) {
+        String highResImgUrl = itunesSong.getImgUrl()
+                .replace("100x100bb", "600x600bb")
+                .replace("60x60bb", "600x600bb");
 
-                String spotifyImgUrl = spotifyResponse.getTracks()
-                        .getItems().get(0).toSongDTO().getImgUrl();
-
-                if (spotifyImgUrl != null && !spotifyImgUrl.isEmpty()) {
-                    return SongDTO.builder()
-                            .id(itunesSong.getId())
-                            .trackName(itunesSong.getTrackName())
-                            .artistName(itunesSong.getArtistName())
-                            .previewUrl(itunesSong.getPreviewUrl())
-                            .imgUrl(spotifyImgUrl)
-                            .releaseDate(itunesSong.getReleaseDate())
-                            .durationMs(itunesSong.getDurationMs())
-                            .genreName(itunesSong.getGenreName())
-                            .build();
-                }
-            }
-        } catch (Exception e) {
-            logger.error("[buildSongWithSpotifyArt] Spotify 앨범아트 조회 실패 - {}: {}",
-                    itunesSong.getTrackName(), e.getMessage());
-        }
-        return itunesSong;
+        return SongDTO.builder()
+                .id(itunesSong.getId())
+                .trackName(itunesSong.getTrackName())
+                .artistName(itunesSong.getArtistName())
+                .previewUrl(itunesSong.getPreviewUrl())
+                .imgUrl(highResImgUrl)
+                .releaseDate(itunesSong.getReleaseDate())
+                .durationMs(itunesSong.getDurationMs())
+                .genreName(itunesSong.getGenreName())
+                .build();
     }
 
     // last.fm 유사 곡
@@ -215,15 +210,8 @@ public class MusicApiService {
 
                 for (SongDTO itunesSong : itunesResponse.getResults()) {
                     try {
-                        String cleanArtist = itunesSong.getArtistName()
-                                .replaceAll("\\s+", " ").trim();
-                        String cleanTrack = itunesSong.getTrackName()
-                                .replaceAll("\\s+", " ").trim();
-
-                        String spotifyQuery = "track:" + cleanTrack
-                                + " artist:" + cleanArtist;
-
-                        SongDTO finalSong = buildSongWithSpotifyArt(itunesSong, spotifyQuery);
+                        // ✅ Spotify 대신 iTunes 해상도 업그레이드
+                        SongDTO finalSong = upgradeImageResolution(itunesSong);
 
                         Song song = modelMapper.map(finalSong, Song.class);
                         songRepository.findById(finalSong.getId())
@@ -286,11 +274,8 @@ public class MusicApiService {
 
                     SongDTO itunesSong = itunesResponse.getResults().get(0);
 
-                    String cleanArtist = itunesSong.getArtistName().replaceAll("\\s+", " ").trim();
-                    String cleanTrack = itunesSong.getTrackName().replaceAll("\\s+", " ").trim();
-                    String spotifyQuery = "track:" + cleanTrack + " artist:" + cleanArtist;
-
-                    SongDTO songDto = buildSongWithSpotifyArt(itunesSong, spotifyQuery);
+                    // ✅ Spotify 대신 iTunes 해상도 업그레이드
+                    SongDTO songDto = upgradeImageResolution(itunesSong);
 
                     Song song = modelMapper.map(songDto, Song.class);
                     songRepository.findById(songDto.getId())
@@ -334,11 +319,8 @@ public class MusicApiService {
 
                     for (SongDTO itunesSong : itunesResponse.getResults()) {
                         try {
-                            String cleanArtist = itunesSong.getArtistName().replaceAll("\\s+", " ").trim();
-                            String cleanTrack = itunesSong.getTrackName().replaceAll("\\s+", " ").trim();
-                            String spotifyQuery = "track:" + cleanTrack + " artist:" + cleanArtist;
-
-                            SongDTO songDto = buildSongWithSpotifyArt(itunesSong, spotifyQuery);
+                            // ✅ Spotify 대신 iTunes 해상도 업그레이드
+                            SongDTO songDto = upgradeImageResolution(itunesSong);
 
                             Song song = modelMapper.map(songDto, Song.class);
                             songRepository.findById(songDto.getId())
@@ -362,7 +344,7 @@ public class MusicApiService {
         }
     }
 
-    // ✅ 유저 검색 곡 리스트 — iTunes 검색 + Spotify 앨범아트 병렬 처리
+    // ✅ 유저 검색 곡 리스트 — iTunes만 사용 (빠른 응답)
     public List<SongDTO> getSearchSongList(String query) {
         List<SongDTO> resultList = new ArrayList<>();
 
@@ -371,35 +353,27 @@ public class MusicApiService {
             return resultList;
         }
 
-        // ✅ 병렬 처리 + 아티스트명/곡명 공백 정규화
-        resultList = itunesResponse.getResults().parallelStream()
-                .map(itunesSong -> {
-                    try {
-                        String cleanArtist = itunesSong.getArtistName()
-                                .replaceAll("\\s+", " ").trim();
-                        String cleanTrack = itunesSong.getTrackName()
-                                .replaceAll("\\s+", " ").trim();
-
-                        String spotifyQuery = "track:" + cleanTrack
-                                + " artist:" + cleanArtist;
-                        return buildSongWithSpotifyArt(itunesSong, spotifyQuery);
-                    } catch (Exception e) {
-                        logger.error("[getSearchSongList] 곡 처리 실패 - {}: {}",
-                                itunesSong.getTrackName(), e.getMessage());
-                        return itunesSong;
-                    }
-                })
+        resultList = itunesResponse.getResults().stream()
+                .map(this::upgradeImageResolution)
                 .collect(Collectors.toList());
 
-        for (SongDTO finalSong : resultList) {
-            try {
-                Song song = modelMapper.map(finalSong, Song.class);
-                songRepository.findById(finalSong.getId())
-                        .orElseGet(() -> songRepository.save(song));
-            } catch (Exception e) {
-                logger.error("[getSearchSongList] DB 저장 실패 - {}: {}",
-                        finalSong.getTrackName(), e.getMessage());
-            }
+        // 한 번에 기존 ID 조회
+        List<Long> ids = resultList.stream()
+                .map(SongDTO::getId)
+                .collect(Collectors.toList());
+        List<Long> existingIds = songRepository.findAllById(ids)
+                .stream()
+                .map(Song::getId)
+                .collect(Collectors.toList());
+
+        // 없는 곡만 저장
+        List<Song> newSongs = resultList.stream()
+                .filter(dto -> !existingIds.contains(dto.getId()))
+                .map(dto -> modelMapper.map(dto, Song.class))
+                .collect(Collectors.toList());
+
+        if (!newSongs.isEmpty()) {
+            songRepository.saveAll(newSongs); // 한 번에 저장
         }
 
         return resultList;

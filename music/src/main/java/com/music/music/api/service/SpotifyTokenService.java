@@ -18,6 +18,7 @@ import lombok.Data;
 public class SpotifyTokenService {
 
     private final Logger logger = LoggerFactory.getLogger(SpotifyTokenService.class);
+    private final Gson gson = new Gson();
 
     @Value("${api.spotify.client-id}")
     private String clientId;
@@ -25,10 +26,13 @@ public class SpotifyTokenService {
     @Value("${api.spotify.client-secret}")
     private String clientSecret;
 
-    private String cachedAccessToken;
-    private long tokenExpiresAt = 0;
+    @Value("${api.spotify.redirect-uri}")
+    private String redirectUri;
 
-    private final Gson gson = new Gson();
+    // ✅ 토큰 캐싱
+    private String cachedAccessToken;
+    private String cachedRefreshToken;
+    private long tokenExpiresAt = 0;
 
     private final RestClient authClient = RestClient.builder()
             .baseUrl("https://accounts.spotify.com")
@@ -39,36 +43,84 @@ public class SpotifyTokenService {
         if (cachedAccessToken != null && System.currentTimeMillis() < tokenExpiresAt) {
             return cachedAccessToken;
         }
-        return fetchNewToken();
+        // refresh token 있으면 갱신
+        if (cachedRefreshToken != null) {
+            return refreshAccessToken();
+        }
+        logger.warn("[getAccessToken] 아직 인증이 완료되지 않았습니다. /spotify/login 먼저 접속하세요.");
+        return null;
     }
 
-    // Client Credentials로 토큰 발급
-    private String fetchNewToken() {
-        String credentials = Base64.getEncoder()
-                .encodeToString((clientId + ":" + clientSecret).getBytes());
+    // ✅ 1단계: Authorization Code → Access Token + Refresh Token 교환
+    public void exchangeCodeForToken(String code) {
+        try {
+            String credentials = Base64.getEncoder()
+                    .encodeToString((clientId + ":" + clientSecret).getBytes());
 
-        String body = authClient.post()
-                .uri("/api/token")
-                .header("Authorization", "Basic " + credentials)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body("grant_type=client_credentials")
-                .retrieve()
-                .body(String.class);
+            String body = authClient.post()
+                    .uri("/api/token")
+                    .header("Authorization", "Basic " + credentials)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body("grant_type=authorization_code"
+                            + "&code=" + code
+                            + "&redirect_uri=" + redirectUri)
+                    .retrieve()
+                    .body(String.class);
 
-        SpotifyTokenResponse tokenResponse = gson.fromJson(body, SpotifyTokenResponse.class);
+            SpotifyTokenResponse tokenResponse = gson.fromJson(body, SpotifyTokenResponse.class);
+            saveToken(tokenResponse);
+            logger.info("[exchangeCodeForToken] 토큰 발급 성공");
+        } catch (Exception e) {
+            logger.error("[exchangeCodeForToken] 토큰 발급 실패: {}", e.getMessage());
+        }
+    }
+
+    // ✅ 2단계: Refresh Token으로 Access Token 갱신
+    private String refreshAccessToken() {
+        try {
+            String credentials = Base64.getEncoder()
+                    .encodeToString((clientId + ":" + clientSecret).getBytes());
+
+            String body = authClient.post()
+                    .uri("/api/token")
+                    .header("Authorization", "Basic " + credentials)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body("grant_type=refresh_token&refresh_token=" + cachedRefreshToken)
+                    .retrieve()
+                    .body(String.class);
+
+            SpotifyTokenResponse tokenResponse = gson.fromJson(body, SpotifyTokenResponse.class);
+            saveToken(tokenResponse);
+            logger.info("[refreshAccessToken] 토큰 갱신 성공");
+            return cachedAccessToken;
+        } catch (Exception e) {
+            logger.error("[refreshAccessToken] 토큰 갱신 실패: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private void saveToken(SpotifyTokenResponse tokenResponse) {
         this.cachedAccessToken = tokenResponse.getAccessToken();
-        logger.info("[fetchNewToken] 토큰 발급 성공: {}", cachedAccessToken != null ? "OK" : "NULL");
         this.tokenExpiresAt = System.currentTimeMillis()
                 + (tokenResponse.getExpiresIn() - 60) * 1000L;
-
-        return cachedAccessToken;
+        // refresh_token은 최초 발급 시에만 오고 갱신 시엔 안 올 수 있음
+        if (tokenResponse.getRefreshToken() != null) {
+            this.cachedRefreshToken = tokenResponse.getRefreshToken();
+        }
     }
 
-    // 토큰 응답 내부 클래스
+    // 인증 완료 여부 확인
+    public boolean isAuthenticated() {
+        return cachedRefreshToken != null;
+    }
+
     @Data
     private static class SpotifyTokenResponse {
         @SerializedName("access_token")
         private String accessToken;
+
+        @SerializedName("refresh_token")
+        private String refreshToken;
 
         @SerializedName("expires_in")
         private int expiresIn;

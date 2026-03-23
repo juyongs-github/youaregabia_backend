@@ -17,7 +17,6 @@ import org.springframework.web.client.RestClient;
 import com.google.gson.Gson;
 import com.music.music.api.dto.ArtistDTO;
 import com.music.music.api.dto.ItunesSearchResponse;
-import com.music.music.api.dto.SpotifySearchResponse;
 import com.music.music.api.dto.SimilarArtistResponse;
 import com.music.music.api.dto.SimilarTracksResponse;
 import com.music.music.api.dto.TrackDTO;
@@ -38,51 +37,14 @@ public class MusicApiService {
     private RestClient lastFmRestClient;
 
     @Autowired
-    @Qualifier("spotifyRestClient")
-    private RestClient spotifyRestClient;
-
-    @Autowired
     @Qualifier("itunesRestClient")
     private RestClient itunesRestClient;
-
-    @Autowired
-    private SpotifyTokenService spotifyTokenService;
 
     @Autowired
     private SongRepository songRepository;
 
     @Autowired
     private ModelMapper modelMapper;
-
-    // Spotify 검색 (track-id 조회용으로만 사용)
-    public SpotifySearchResponse getTrackInfo(String term, String type, int limit) {
-        try {
-            String accessToken = spotifyTokenService.getAccessToken();
-
-            if (accessToken == null) {
-                logger.warn("[Spotify] accessToken 없음 - /spotify/login 필요");
-                return null;
-            }
-
-            logger.info("[getTrackInfo] 검색어: {}, limit: {}", term, limit);
-
-            String body = spotifyRestClient.get()
-                    .uri(url -> url.path("/v1/search")
-                            .queryParam("q", term)
-                            .queryParam("type", "track")
-                            .queryParam("market", "KR")
-                            .queryParam("limit", limit)
-                            .build())
-                    .header("Authorization", "Bearer " + accessToken)
-                    .retrieve()
-                    .body(String.class);
-
-            return gson.fromJson(body, SpotifySearchResponse.class);
-        } catch (Exception e) {
-            logger.error("[getTrackInfo] Spotify API 곡 정보 가져오기 실패 - 검색어: {}, error: {}", term, e.getMessage());
-            return null;
-        }
-    }
 
     // iTunes 검색 전용
     private ItunesSearchResponse getItunesTrackInfo(String term, String attribute, int limit) {

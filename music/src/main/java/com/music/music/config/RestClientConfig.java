@@ -25,12 +25,5 @@ public class RestClientConfig {
                 .build();
     }
 
-    // 스포티파이
-    @Bean
-    @Qualifier("spotifyRestClient")
-    public RestClient spotifyRestClient() {
-        return RestClient.builder()
-                .baseUrl("https://api.spotify.com")
-                .build();
-    }
+
 }

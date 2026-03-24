@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/replies")
+@RequestMapping("/api/replies")
 public class ReplyLikeController {
     private final ReplyLikeService replyLikeService;
 

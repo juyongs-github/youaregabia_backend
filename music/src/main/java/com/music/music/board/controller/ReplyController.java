@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/community/share")
+@RequestMapping("/api/community/share")
 public class ReplyController {
   private final ReplyService replyService;
 

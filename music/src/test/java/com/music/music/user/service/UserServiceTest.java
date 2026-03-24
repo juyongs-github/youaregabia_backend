@@ -46,6 +46,7 @@ public class UserServiceTest {
         "1996-03-03", // ✅ 추가
         "010-1234-5678",
         "서울",
+        "상세주소 테스트",
         "MOCK-CI-EXIST");
 
     // when
@@ -75,6 +76,7 @@ public class UserServiceTest {
         "1996-03-03", // ✅ 추가
         "010-1234-5678",
         "서울",
+        "상세주소 테스트",
         "MOCK-CI-EXIST");
 
     assertThatThrownBy(() -> userService.register(request))

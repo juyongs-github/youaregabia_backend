@@ -22,7 +22,7 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/community/share")
+@RequestMapping("/api/community/share")
 public class BoardController {
     private final BoardService boardService;
 

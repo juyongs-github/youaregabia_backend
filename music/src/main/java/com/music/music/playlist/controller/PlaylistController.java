@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.PutMapping;
 
-@RequestMapping("/playlist")
+@RequestMapping("/api/playlist")
 @RequiredArgsConstructor
 @RestController
 public class PlaylistController {

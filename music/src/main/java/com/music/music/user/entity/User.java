@@ -7,8 +7,11 @@ import java.util.List;
 
 import org.hibernate.annotations.ColumnDefault;
 
+import com.music.music.common.AesEncryptConverter;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -50,8 +53,9 @@ public class User {
   @Column(name = "updated_at", nullable = false)
   private LocalDateTime updatedAt;
 
-  // 휴대폰 번호
-  @Column(name = "phone_number", nullable = false, length = 20)
+  // 휴대폰 번호 (암호화 저장)
+  @Convert(converter = AesEncryptConverter.class)
+  @Column(name = "phone_number", nullable = false, length = 500)
   private String phoneNumber;
 
   // 이름
@@ -65,14 +69,19 @@ public class User {
   @Column(length = 100)
   private String email;
 
-  @Column(length = 255)
+  // 주소 (암호화 저장)
+  @Convert(converter = AesEncryptConverter.class)
+  @Column(length = 500)
   private String address;
 
-  @Column(name = "address_detail", length = 255)
+  // 상세주소 (암호화 저장)
+  @Convert(converter = AesEncryptConverter.class)
+  @Column(name = "address_detail", length = 500)
   private String addressDetail;
 
-  // CI (본인인증 고유값)
-  @Column(name = "ci", nullable = false, length = 255, unique = true)
+  // CI (본인인증 고유값, 암호화 저장)
+  @Convert(converter = AesEncryptConverter.class)
+  @Column(name = "ci", nullable = false, length = 500, unique = true)
   private String ci;
 
   @Column(name = "img_url", length = 255)

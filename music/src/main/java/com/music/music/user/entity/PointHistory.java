@@ -35,7 +35,7 @@ public class PointHistory extends BaseEntity{
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false, columnDefinition = "varchar(50)")
     private PointType pointType;
 
     @Column(nullable = false)

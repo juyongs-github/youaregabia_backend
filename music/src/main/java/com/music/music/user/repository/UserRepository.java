@@ -36,4 +36,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
   Optional<User> findByNameAndPhoneNumber(String name, String phoneNumber);
 
   Optional<User> findByEmailAndPhoneNumber(String email, String phoneNumber);
+
+  // 유저 회원탈퇴시
+  int countByEmailStartingWith(String prefix);
 }

@@ -2,24 +2,14 @@ package com.music.music.user.service;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.music.music.auth.dto.LoginRequest;
 import com.music.music.auth.dto.RegisterRequest;
+import com.music.music.common.AesUtil;
 import com.music.music.auth.dto.SocialRegisterRequest;
 import com.music.music.auth.oauth2.OAuth2UserInfo;
-import com.music.music.board.repository.BoardRepository;
-import com.music.music.board.repository.ReplyLikeRepository;
-import com.music.music.board.repository.ReplyRepository;
-import com.music.music.goods.repository.GoodsOrderRepository;
-import com.music.music.notification.repository.NotificationRepository;
-import com.music.music.playlist.repository.PlaylistRepository;
-import com.music.music.playlist.repository.PlaylistSongRepository;
-import com.music.music.playlist.repository.PlaylistSongVoteRepository;
-import com.music.music.review.repository.ReviewRepository;
 import com.music.music.user.entity.User;
 import com.music.music.user.entity.UserSocialAccount;
 import com.music.music.user.repository.UserRepository;
@@ -35,15 +25,8 @@ public class UserService {
   private final UserRepository userRepository;
   private final UserSocialAccountRepository socialAccountRepository;
   private final PasswordEncoder passwordEncoder;
-  private final ReplyLikeRepository replyLikeRepository;
-  private final ReplyRepository replyRepository;
-  private final BoardRepository boardRepository;
-  private final NotificationRepository notificationRepository;
-  private final GoodsOrderRepository goodsOrderRepository;
-  private final PlaylistRepository playlistRepository;
-  private final PlaylistSongRepository playlistSongRepository;
-  private final PlaylistSongVoteRepository playlistSongVoteRepository;
-  private final ReviewRepository reviewRepository;
+
+  private final AesUtil aesUtil;
 
   private static final LocalDate MIN_BIRTH_DATE = LocalDate.of(1920, 1, 1);
 
@@ -73,8 +56,8 @@ public class UserService {
       throw new IllegalArgumentException("본인인증(CI)이 필요합니다.");
     }
 
-    // 2️⃣ CI 중복 체크
-    if (userRepository.existsByCi(request.getCi())) {
+    // 2️⃣ CI 중복 체크 (암호화값으로 비교)
+    if (userRepository.existsByCi(aesUtil.encrypt(request.getCi()))) {
       throw new IllegalArgumentException("이미 가입된 사용자입니다.");
     }
 
@@ -146,7 +129,7 @@ public class UserService {
   }
 
   public User registerSocialUser(SocialRegisterRequest request, OAuth2UserInfo oAuth2UserInfo) {
-    if (userRepository.existsByCi(request.ci())) {
+    if (userRepository.existsByCi(aesUtil.encrypt(request.ci()))) {
       throw new IllegalArgumentException("이미 가입된 사용자입니다.");
     }
 
@@ -176,7 +159,7 @@ public class UserService {
   }
 
   public User linkSocialUser(String ci, OAuth2UserInfo oAuth2UserInfo) {
-    User user = userRepository.findByCi(ci)
+    User user = userRepository.findByCi(aesUtil.encrypt(ci))
         .orElseThrow(() -> new IllegalArgumentException("해당 CI의 사용자를 찾을 수 없습니다."));
 
     boolean alreadyLinked = socialAccountRepository
@@ -195,31 +178,10 @@ public class UserService {
     return user;
   }
 
-  @Transactional
-  public void deleteUser(String email) {
-    String normalizedEmail = normalizeEmail(email);
-    User user = userRepository.findByEmail(normalizedEmail)
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-    Long userId = user.getId();
-
-    // 연관 데이터를 FK 의존 순서대로 삭제
-    goodsOrderRepository.deleteAll(goodsOrderRepository.findByUser_Id(userId));
-    notificationRepository.deleteByReceiver_Id(userId);
-    replyLikeRepository.deleteByUser_Id(userId);
-    replyRepository.deleteByUser_Id(userId);
-    boardRepository.deleteByUser_Id(userId);
-    playlistSongVoteRepository.deleteByUserId(userId);
-    playlistSongRepository.clearSuggestedByUserId(userId);
-    reviewRepository.deleteByUserId(userId);
-    playlistRepository.deleteByUserId(userId);
-
-    userRepository.delete(user); // socialAccounts는 CascadeType.ALL로 자동 삭제
-  }
-
   @Transactional(readOnly = true)
   public String findEmail(String name, String phoneNumber) {
     String normalizedPhone = normalizePhone(phoneNumber);
-    User user = userRepository.findByNameAndPhoneNumber(name, normalizedPhone)
+    User user = userRepository.findByNameAndPhoneNumber(name, aesUtil.encrypt(normalizedPhone))
         .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
     return maskEmail(user.getEmail());
   }
@@ -228,7 +190,7 @@ public class UserService {
   public void resetPassword(String email, String phoneNumber, String newPassword) {
     String normalizedEmail = normalizeEmail(email);
     String normalizedPhone = normalizePhone(phoneNumber);
-    User user = userRepository.findByEmailAndPhoneNumber(normalizedEmail, normalizedPhone)
+    User user = userRepository.findByEmailAndPhoneNumber(normalizedEmail, aesUtil.encrypt(normalizedPhone))
         .orElseThrow(() -> new IllegalArgumentException("일치하는 회원 정보가 없습니다."));
     user.setPassword(passwordEncoder.encode(newPassword));
   }
@@ -253,5 +215,24 @@ public class UserService {
     user.setImgUrl(imgUrl);
 
     // @Transactional 어노테이션 덕분에 메서드가 끝날 때 DB에 자동 저장됩니다.
+  }
+
+  @Transactional
+  public void deleteUser(String email) {
+      User user = userRepository.findByEmail(email)
+          .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+      // 이미 탈퇴한 유저 방지
+      if (user.getState() == 0) {
+          throw new IllegalArgumentException("이미 탈퇴한 회원입니다.");
+      }
+
+      String anonymousEmail = generateDeleteEmail();
+      user.withdraw(anonymousEmail);
+  }
+
+  private String generateDeleteEmail() {
+      int count = userRepository.countByEmailStartingWith("deleteUser");
+      return String.format("deleteUser%04d@delete.com", count + 1);
   }
 }

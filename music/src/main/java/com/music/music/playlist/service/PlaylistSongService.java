@@ -9,8 +9,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.music.music.api.entity.SongDTO;
-import com.music.music.api.repository.SongRepository;
+import com.music.music.playlist.dto.SongDTO;
+import com.music.music.playlist.repository.SongRepository;
 import com.music.music.playlist.dto.CollaboSongDto;
 import com.music.music.playlist.entity.Playlist;
 import com.music.music.playlist.entity.PlaylistSong;
@@ -29,8 +29,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 public class PlaylistSongService {
 
-    private static final int MAX_SONGS_PER_USER  = 5;
-    private static final int MAX_VOTES_PER_USER  = 3;
+    private static final int MAX_SONGS_PER_USER = 5;
+    private static final int MAX_VOTES_PER_USER = 3;
 
     private final PlaylistRepository     playlistRepository;
     private final PlaylistSongRepository playlistSongRepository;
@@ -52,14 +52,12 @@ public class PlaylistSongService {
     public List<CollaboSongDto> getCollaboSongs(Long playlistId, String userEmail) {
         List<PlaylistSong> songs = playlistSongRepository.findByPlaylistIdWithSongAndUser(playlistId);
 
-        // 곡별 투표수 맵 (playlistSongId → count)
         Map<Long, Long> voteCountMap = voteRepository.countVotesByPlaylistId(playlistId)
                 .stream()
                 .collect(Collectors.toMap(
                         row -> (Long) row[0],
                         row -> (Long) row[1]));
 
-        // 내가 투표한 곡 id 셋
         Set<Long> myVotedIds = (userEmail != null && !userEmail.isBlank())
                 ? Set.copyOf(voteRepository.findVotedSongIdsByPlaylistIdAndEmail(playlistId, userEmail))
                 : Set.of();
@@ -90,10 +88,6 @@ public class PlaylistSongService {
 
         if (!playlist.getUser().getEmail().equals(creatorEmail)) {
             throw new IllegalStateException("작성자만 곡을 직접 추가할 수 있습니다.");
-        }
-
-        if (playlistSongRepository.existsByPlaylistIdAndSongId(playlistId, songId)) {
-            throw new IllegalArgumentException("이미 수록된 곡입니다.");
         }
 
         Song song = songRepository.findById(songId)

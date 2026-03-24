@@ -3,7 +3,6 @@ package com.music.music.playlist.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.music.music.api.entity.SongDTO;
 import com.music.music.playlist.entity.constant.PlaylistType;
 
 import lombok.AllArgsConstructor;

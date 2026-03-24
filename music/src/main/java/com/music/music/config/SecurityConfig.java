@@ -23,9 +23,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final OAuth2SuccessHandler oAuth2SuccessHandler;
-    private final CustomOAuth2AuthorizationRequestResolver customOAuth2AuthorizationRequestResolver;
-    private final JwtAuthFilter jwtAuthFilter;
+        private final OAuth2SuccessHandler oAuth2SuccessHandler;
+        private final CustomOAuth2AuthorizationRequestResolver customOAuth2AuthorizationRequestResolver;
+        private final JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -53,11 +53,11 @@ public class SecurityConfig {
                         .successHandler(oAuth2SuccessHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+        @Bean
+        public PasswordEncoder passwordEncoder() {
+                return new BCryptPasswordEncoder();
+        }
 }

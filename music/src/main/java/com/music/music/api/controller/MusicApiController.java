@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.music.music.api.entity.SongDTO;
-import com.music.music.api.repository.SongRepository;
 import com.music.music.api.service.MusicApiService;
+import com.music.music.playlist.dto.SongDTO;
 import com.music.music.playlist.entity.Song;
+import com.music.music.playlist.repository.SongRepository;
 
 @RestController
 public class MusicApiController {

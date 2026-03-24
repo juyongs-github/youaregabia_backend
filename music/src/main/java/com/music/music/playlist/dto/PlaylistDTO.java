@@ -1,5 +1,6 @@
 package com.music.music.playlist.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.music.music.api.entity.SongDTO;
@@ -32,5 +33,6 @@ public class PlaylistDTO {
     private int songCount;
     // 플레이리스트 곡 목록
     private List<SongDTO> songs;
-
+    // 마감 시간 (공동 플레이리스트인 경우)
+    private LocalDateTime deadline;
 }

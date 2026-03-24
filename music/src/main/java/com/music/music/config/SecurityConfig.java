@@ -43,7 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/ci/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/notifications/**").authenticated()
-                        .requestMatchers("/playlist/**").authenticated()
+                        .requestMatchers("/api/playlist/**").authenticated()
                         .anyRequest().permitAll())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)

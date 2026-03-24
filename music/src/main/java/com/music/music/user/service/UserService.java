@@ -193,25 +193,7 @@ public class UserService {
     return user;
   }
 
-  @Transactional
-  public void deleteUser(String email) {
-    String normalizedEmail = normalizeEmail(email);
-    User user = userRepository.findByEmail(normalizedEmail)
-        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
-    Long userId = user.getId();
 
-    // 연관 데이터를 FK 의존 순서대로 삭제
-    goodsOrderRepository.deleteAll(goodsOrderRepository.findByUser_Id(userId));
-    notificationRepository.deleteByReceiver_Id(userId);
-    replyLikeRepository.deleteByUser_Id(userId);
-    replyRepository.deleteByUser_Id(userId);
-    boardRepository.deleteByUser_Id(userId);
-    collaboParticipantRepository.deleteBySuggestedBy_Id(userId);
-    reviewRepository.deleteByUserId(userId);
-    playlistRepository.deleteByUserId(userId);
-
-    userRepository.delete(user); // socialAccounts는 CascadeType.ALL로 자동 삭제
-  }
 
   @Transactional(readOnly = true)
   public String findEmail(String name, String phoneNumber) {
@@ -250,5 +232,24 @@ public class UserService {
     user.setImgUrl(imgUrl);
 
     // @Transactional 어노테이션 덕분에 메서드가 끝날 때 DB에 자동 저장됩니다.
+  }
+
+  @Transactional
+  public void deleteUser(String email) {
+      User user = userRepository.findByEmail(email)
+          .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+      // 이미 탈퇴한 유저 방지
+      if (user.getState() == 0) {
+          throw new IllegalArgumentException("이미 탈퇴한 회원입니다.");
+      }
+
+      String anonymousEmail = generateDeleteEmail();
+      user.withdraw(anonymousEmail);
+  }
+
+  private String generateDeleteEmail() {
+      int count = userRepository.countByEmailStartingWith("deleteUser");
+      return String.format("deleteUser%04d@delete.com", count + 1);
   }
 }

@@ -23,20 +23,27 @@ public class RankingService {
     private static final int TOP_N = 10;
 
     // 1. 좋아요 유저 랭킹 (게시글 likeCount + 댓글 likeCount 합산)
+    // getTopLikeUsers()
     public List<UserRankingDto> getTopLikeUsers() {
         String jpql = """
             SELECT new com.music.music.ranking.dto.UserRankingDto(
                 u.id,
                 u.name,
                 CAST(up.grade AS string),
-                (COALESCE(SUM(DISTINCT b.likeCount), 0) + COALESCE(SUM(DISTINCT r.likeCount), 0))
+                (
+                    (SELECT COALESCE(SUM(b.likeCount), 0) FROM Board b WHERE b.user = u AND b.deleted = false)
+                    +
+                    (SELECT COALESCE(SUM(r.likeCount), 0) FROM Reply r WHERE r.user = u AND r.deleted = false)
+                )
             )
-            FROM User u
-            LEFT JOIN Board b ON b.user = u AND b.deleted = false
-            LEFT JOIN Reply r ON r.user = u AND r.deleted = false
-            LEFT JOIN UserPoint up ON up.user = u
-            GROUP BY u.id, u.nickname, up.grade
-            ORDER BY (COALESCE(SUM(DISTINCT b.likeCount), 0) + COALESCE(SUM(DISTINCT r.likeCount), 0)) DESC
+            FROM users u
+            JOIN UserPoint up ON up.user = u
+            WHERE u.state = 1
+            ORDER BY (
+                (SELECT COALESCE(SUM(b.likeCount), 0) FROM Board b WHERE b.user = u AND b.deleted = false)
+                +
+                (SELECT COALESCE(SUM(r.likeCount), 0) FROM Reply r WHERE r.user = u AND r.deleted = false)
+            ) DESC
             """;
 
         return em.createQuery(jpql, UserRankingDto.class)
@@ -44,7 +51,7 @@ public class RankingService {
                 .getResultList();
     }
 
-    // 2. 포인트 유저 랭킹
+    // 2. getTopPointUsers() - 탈퇴 회원 필터링 추가
     public List<UserRankingDto> getTopPointUsers() {
         String jpql = """
             SELECT new com.music.music.ranking.dto.UserRankingDto(
@@ -55,6 +62,8 @@ public class RankingService {
             )
             FROM UserPoint up
             JOIN up.user u
+            WHERE up.totalPoint > 0
+            AND u.state = 1
             ORDER BY up.totalPoint DESC
             """;
 

@@ -87,11 +87,11 @@ public class AuthController {
     return userRepository.existsByEmail(email);
   }
 
-  // 회원탈퇴
+  // 유저 회원탈퇴
   @DeleteMapping("/withdraw")
-  public ResponseEntity<Void> withdraw(@RequestBody Map<String, String> body) {
-    userService.deleteUser(body.get("email"));
-    return ResponseEntity.ok().build();
+  public ResponseEntity<Void> withdraw(@AuthenticationPrincipal String email) {
+      userService.deleteUser(email);
+      return ResponseEntity.ok().build();
   }
 
   // 아이디 찾기

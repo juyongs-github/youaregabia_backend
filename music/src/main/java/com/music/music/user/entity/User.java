@@ -124,4 +124,19 @@ public class User {
   public void setRole(Role role) {
     this.role = role;
   }
+
+  // 유저 회원 탈퇴시
+  public void withdraw(String anonymousEmail) {
+    this.state = 0;
+    this.name = "탈퇴한 회원입니다";
+    this.email = anonymousEmail;
+    this.ci = "DELETED_" + this.id;
+    this.phoneNumber = "000-0000-0000";
+    this.birthDate = LocalDate.of(1900, 1, 1);
+    this.address = null;
+    this.addressDetail = null;
+    this.password = null;
+    this.imgUrl = null;
+    this.socialAccounts.clear();
+  }
 }

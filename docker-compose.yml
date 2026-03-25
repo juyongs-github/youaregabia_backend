@@ -49,6 +49,9 @@ services:
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
       NAVER_CLIENT_ID: ${NAVER_CLIENT_ID}
       NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_NAME: ${ADMIN_NAME}
     volumes:
       - uploads:/home/deploy/uploads
     ports:

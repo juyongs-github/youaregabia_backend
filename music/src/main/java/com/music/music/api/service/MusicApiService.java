@@ -1,6 +1,7 @@
 package com.music.music.api.service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -203,6 +204,11 @@ public class MusicApiService {
             } else if (!similarArtistList.isEmpty()) {
                 resultList = similarArtistList;
             }
+
+            resultList = resultList.stream()
+                    .collect(Collectors.toMap(SongDTO::getId, s -> s, (a, b) -> a, LinkedHashMap::new))
+                    .values().stream().toList();
+
             return resultList;
         } catch (Exception e) {
             logger.error("[getRecommendSongList] 추천 곡 리스트 실패 - error: {}", e.getMessage());

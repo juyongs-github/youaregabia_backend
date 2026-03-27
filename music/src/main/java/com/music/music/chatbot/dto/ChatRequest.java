@@ -3,11 +3,9 @@ package com.music.music.chatbot.dto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 @Getter
 @NoArgsConstructor
 public class ChatRequest {
     private String message;
-    private List<MessageHistory> history;
+    private String sessionId; // 기존 세션 이어가기 (없으면 새 세션 생성)
 }

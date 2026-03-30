@@ -49,4 +49,11 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
                         order by b.boardId desc
                         """)
         Page<Board> findCriticBoardsBySongId(@Param("songId") Long songId, Pageable pageable);
+
+        // 좋아요 5개 이상 + BoardType별 필터
+    @Query("SELECT b FROM Board b WHERE b.likeCount >= :minLike AND b.boardType = :boardType AND b.deleted = false ORDER BY b.likeCount DESC")
+    List<Board> findPopularBoards(@Param("minLike") int minLike, @Param("boardType") BoardType boardType);
+
+    @Query("SELECT b FROM Board b WHERE b.likeCount >= :minLike AND b.deleted = false ORDER BY b.likeCount DESC")
+    List<Board> findPopularBoardsAll(@Param("minLike") int minLike);
 }

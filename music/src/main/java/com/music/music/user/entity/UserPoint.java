@@ -37,6 +37,10 @@ public class UserPoint extends BaseEntity {
     @Builder.Default
     private int totalPoint = 0;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private int accumulatedPoint = 0;  // 누적 획득량 (차감 안 됨) → 등급 기준
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -44,6 +48,7 @@ public class UserPoint extends BaseEntity {
 
     public void addPoint(int amount) {
         this.totalPoint += amount;
+        this.accumulatedPoint += amount;  // 누적만 올라감
         updateGrade();
     }
 
@@ -57,16 +62,17 @@ public class UserPoint extends BaseEntity {
     }
 
     private void updateGrade() {
-        if (this.totalPoint >= 200000) {
-            this.grade = Grade.LEGEND;
-        } else if (this.totalPoint >= 100000) {
-            this.grade = Grade.MAESTRO;
-        } else if (this.totalPoint >= 50000) {
-            this.grade = Grade.SOLOIST;
-        } else if(this.totalPoint >= 10000) {
-            this.grade = Grade.SESSION;
-        } else{
-            this.grade = Grade.ENSEMBLE;
-        }
+    // accumulatedPoint 기준으로 판단
+    if (this.accumulatedPoint >= 200000) {
+        this.grade = Grade.LEGEND;
+    } else if (this.accumulatedPoint >= 100000) {
+        this.grade = Grade.MAESTRO;
+    } else if (this.accumulatedPoint >= 50000) {
+        this.grade = Grade.SOLOIST;
+    } else if (this.accumulatedPoint >= 10000) {
+        this.grade = Grade.SESSION;
+    } else {
+        this.grade = Grade.ENSEMBLE;
+    }
     }
 }

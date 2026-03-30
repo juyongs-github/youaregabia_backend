@@ -37,6 +37,12 @@ public class OpenAiService {
           예) 이전에 "1970년대 노래"를 추천했고 사용자가 "한국 노래로"라고 하면
               → 1970년대 한국 노래를 추천해야 합니다.
 
+        [후속 질문 처리 - 매우 중요]
+        - "발매일이 언제야?", "가사 알려줘", "이 노래 어때?", "누가 만들었어?", "뮤직비디오 있어?" 등
+          이전에 추천하거나 언급한 곡에 대한 구체적인 정보를 묻는 질문은 절대 새 추천으로 처리하지 마세요.
+        - 이런 후속 질문이 오면 반드시 직전 대화에서 언급된 곡을 기준으로 정보를 제공하세요.
+        - 새로운 곡 추천이 명확하게 요청되지 않으면 추천하지 마세요.
+
         [답변 가능한 범위 - 아래 주제는 모두 허용]
         - 음악 추천, 특정 곡 설명 ("이 노래 어떤 노래야?", "이 곡 분위기가 어때?")
         - 아티스트 정보 (데뷔, 수상, 소속사, 활동 이력, 멤버 구성 등)
@@ -64,23 +70,36 @@ public class OpenAiService {
         this.chatClient = chatClientBuilder.build();
     }
 
-    public String getResponse(String message, List<ChatMessage> history, Integer age, List<String> previousRecommendations) {
+    public String getResponse(String message, List<ChatMessage> history, Integer age, List<String> previousRecommendations, List<String> chartContext) {
         try {
-            return chatClient.prompt(new Prompt(buildMessages(message, history, age, previousRecommendations)))
+            String content = chatClient.prompt(new Prompt(buildMessages(message, history, age, previousRecommendations, chartContext)))
                     .call()
                     .content();
+            if (content == null || content.isBlank()) {
+                logger.warn("[OpenAiService] 빈 응답 수신");
+                return "죄송해요, 응답을 생성하지 못했어요. 다시 시도해주세요.";
+            }
+            return content;
         } catch (Exception e) {
-            logger.error("[ChatbotService] 응답 생성 실패: {}", e.getMessage());
+            logger.error("[OpenAiService] 응답 생성 실패: {}", e.getMessage());
             return "죄송해요, 현재 AI 추천 서비스에 문제가 발생했어요. 잠시 후 다시 시도해주세요.";
         }
     }
 
-    private List<Message> buildMessages(String message, List<ChatMessage> history, Integer age, List<String> previousRecommendations) {
+    private List<Message> buildMessages(String message, List<ChatMessage> history, Integer age, List<String> previousRecommendations, List<String> chartContext) {
         List<Message> messages = new ArrayList<>();
 
         String systemPrompt = SYSTEM_PROMPT;
         if (age != null) {
             systemPrompt += "\n사용자 정보:\n- 나이: " + age + "세\n위 정보를 참고해서 추천해주세요.";
+        }
+        if (chartContext != null && !chartContext.isEmpty()) {
+            String chartList = chartContext.stream()
+                    .collect(java.util.stream.Collectors.joining("\n"));
+            systemPrompt += "\n\n[현재 한국 인기차트 TOP 20 - Last.fm 실시간 데이터]\n"
+                    + chartList
+                    + "\n위 차트 데이터는 실시간으로 수집된 최신 인기곡입니다. "
+                    + "사용자가 최신/요즘/인기 음악을 요청하면 이 목록에서 우선적으로 추천하세요.";
         }
         if (previousRecommendations != null && !previousRecommendations.isEmpty()) {
             // 곡명 목록만 전달 (전체 AI 응답 대신 파싱된 곡명만 사용해 토큰 절약)

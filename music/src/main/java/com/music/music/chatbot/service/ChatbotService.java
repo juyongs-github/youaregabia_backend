@@ -36,6 +36,7 @@ public class ChatbotService {
     private final RuleBasedService ruleBasedService;
     private final OpenAiService openAiService;
     private final ItunesService itunesService;
+    private final ChartService chartService;
     private final UserRepository userRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -52,6 +53,17 @@ public class ChatbotService {
     private static final List<String> GUIDE_KEYWORDS = List.of(
             "어떻게", "방법", "사용법", "기능", "도움", "가이드", "알려줘", "뭐야", "무엇",
             "설명", "안내", "모르", "도와줘", "어디서", "어디에"
+    );
+
+    // 곡 정보 요청 키워드: 추천이 아닌 특정 곡의 정보(발매일·가사·작곡 등)를 묻는 경우
+    // → 중복 방지 목록 전달 안 함 (전달 시 AI가 새 추천으로 오해)
+    // 주의: "이 노래", "그 곡" 같은 모호한 표현은 포함하지 않음 (추천 요청에도 쓰일 수 있음)
+    private static final List<String> SONG_INFO_KEYWORDS = List.of(
+            "발매일", "출시일", "언제 나왔", "언제 발매", "언제 나온", "언제 출시",
+            "가사", "뮤직비디오", "뮤비",
+            "누가 만들었", "작곡가", "작사가", "프로듀서",
+            "수상 이력", "수상 경력", "앨범명", "앨범 이름",
+            "몇 년도 노래", "몇년도 노래"
     );
 
     private static final List<String> FEATURE_KEYWORDS = List.of(
@@ -112,16 +124,28 @@ public class ChatbotService {
         // 4. 이전 세션 + 현재 세션에서 이미 추천한 곡명 추출 (중복 방지)
         List<String> previousSongTitles = getPreviousRecommendedSongs(user, session.getId(), history);
 
-        // 5. AI 호출
-        String aiResponse = openAiService.getResponse(message, history, age, previousSongTitles);
+        // 5. 곡 정보 요청 여부 판단 (발매일·가사 등 순수 정보 질문이면 중복 방지 목록 전달 안 함)
+        boolean isFollowUp = isSongInfoQuery(message);
 
-        // 5-1. iTunes로 추천 곡 검증 — 40% 미만 확인되면 1회 재시도
-        List<String[]> extractedSongs = itunesService.extractSongs(aiResponse);
-        if (!extractedSongs.isEmpty()) {
-            double rate = itunesService.verifyRate(extractedSongs);
-            if (rate < 0.4) {
-                logger.info("[ChatbotService] iTunes 검증률 낮음({}%), AI 재호출", String.format("%.0f", rate * 100));
-                aiResponse = openAiService.getResponse(message, history, age, previousSongTitles);
+        // 5-1. 차트 컨텍스트 — 항상 주입 (캐시 데이터라 비용 없음, 후속 메시지에도 최신 차트 유지)
+        // AI 시스템 프롬프트에서 최신/인기 요청 시에만 활용하도록 지시되어 있음
+        List<String> chartContext = chartService.getChart();
+
+        // 6. AI 호출 (후속 질문이면 중복 방지 목록 전달 안 함 — AI가 새 추천으로 오해 방지)
+        List<String> titlesToPass = isFollowUp ? null : previousSongTitles;
+        String aiResponse = openAiService.getResponse(message, history, age, titlesToPass, chartContext);
+
+        // 6-1. iTunes로 추천 곡 검증 — 후속 질문이 아니고 40% 미만이면 1회 재시도
+        if (!isFollowUp) {
+            List<String[]> extractedSongs = itunesService.extractSongs(aiResponse);
+            if (!extractedSongs.isEmpty()) {
+                double rate = itunesService.verifyRate(extractedSongs);
+                if (rate < 0.4) {
+                    logger.info("[ChatbotService] iTunes 검증률 낮음({}%), AI 재호출", String.format("%.0f", rate * 100));
+                    List<String> enrichedTitles = new ArrayList<>(previousSongTitles);
+                    enrichedTitles.addAll(itunesService.extractSongTitles(aiResponse));
+                    aiResponse = openAiService.getResponse(message, history, age, enrichedTitles, chartContext);
+                }
             }
         }
 
@@ -240,5 +264,10 @@ public class ChatbotService {
         boolean hasGuideKeyword = GUIDE_KEYWORDS.stream().anyMatch(lower::contains);
         boolean hasFeatureKeyword = FEATURE_KEYWORDS.stream().anyMatch(lower::contains);
         return hasGuideKeyword && hasFeatureKeyword;
+    }
+
+    private boolean isSongInfoQuery(String message) {
+        String lower = message.toLowerCase();
+        return SONG_INFO_KEYWORDS.stream().anyMatch(lower::contains);
     }
 }

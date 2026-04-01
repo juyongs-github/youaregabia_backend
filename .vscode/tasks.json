@@ -6,7 +6,14 @@
       "type": "shell",
       "command": "./gradlew bootRun",
       "options": {
-        "cwd": "${workspaceFolder}/music"
+        "cwd": "${workspaceFolder}/music",
+        "shell": {
+          "executable": "C:\\Program Files\\Git\\bin\\bash.exe",
+          "args": ["-c"]
+        },
+        "env": {
+          "JAVA_TOOL_OPTIONS": "-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8"
+        }
       },
       "isBackground": true,
       "problemMatcher": {
@@ -33,7 +40,15 @@
       "type": "shell",
       "command": "venv/Scripts/uvicorn main:app --host 0.0.0.0 --port 8001 --reload",
       "options": {
-        "cwd": "${workspaceFolder}/ytmusic-service"
+        "cwd": "${workspaceFolder}/ytmusic-service",
+        "shell": {
+          "executable": "C:\\Program Files\\Git\\bin\\bash.exe",
+          "args": ["-c"]
+        },
+        "env": {
+          "PYTHONIOENCODING": "utf-8",
+          "PYTHONLEGACYWINDOWSSTDIO": "0"
+        }
       },
       "isBackground": true,
       "problemMatcher": {
@@ -53,6 +68,15 @@
         "reveal": "always",
         "panel": "dedicated",
         "group": "servers"
+      }
+    },
+    {
+      "label": "Run All Servers",
+      "dependsOn": ["Run Spring Boot", "Run Python FastAPI"],
+      "dependsOrder": "parallel",
+      "group": {
+        "kind": "build",
+        "isDefault": true
       }
     }
   ]

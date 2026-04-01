@@ -50,14 +50,25 @@ public class VectorSearchService {
         checkAvailability();
     }
 
+    @SuppressWarnings("unchecked")
     private void checkAvailability() {
         try {
-            pythonClient.get().uri("/vector/stats").retrieve().toBodilessEntity();
+            java.util.Map<String, Object> status = pythonClient.get().uri("/status")
+                    .retrieve()
+                    .body(java.util.Map.class);
             vectorAvailable = true;
-            logger.info("[VectorSearchService] FAISS 벡터 서비스 연결 완료 - {}", pythonServiceUrl);
+            if (status != null) {
+                boolean ytmusicAuth      = Boolean.TRUE.equals(status.get("ytmusic_auth"));
+                boolean ytmusicAvailable = Boolean.TRUE.equals(status.get("ytmusic_available"));
+                Object textVectors  = status.get("faiss_text_vectors");
+                Object audioVectors = status.get("faiss_audio_vectors");
+                logger.info("[Python 서버] 연결 완료 - {}", pythonServiceUrl);
+                logger.info("[Python 서버] YTMusic 인증: {} / 사용가능: {}", ytmusicAuth ? "O" : "X", ytmusicAvailable ? "O" : "X");
+                logger.info("[Python 서버] FAISS 벡터 - 텍스트: {}개 / 오디오: {}개", textVectors, audioVectors);
+            }
         } catch (Exception e) {
             vectorAvailable = false;
-            logger.warn("[VectorSearchService] FAISS 서비스 연결 불가 — 벡터 검색 비활성화 (Python 서버 확인 필요)");
+            logger.warn("[Python 서버] 연결 불가 — 벡터/YTMusic 검색 비활성화 (Python 서버 확인 필요)");
         }
     }
 

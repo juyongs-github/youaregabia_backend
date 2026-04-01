@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
+
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
 import yt_dlp
@@ -159,6 +165,17 @@ class SearchRequest(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/status")
+def status():
+    return {
+        "status": "ok",
+        "ytmusic_auth": YTMUSIC_AUTH_AVAILABLE,
+        "ytmusic_available": ytmusic_client is not None,
+        "faiss_text_vectors": faiss_index.ntotal,
+        "faiss_audio_vectors": audio_index.ntotal,
+    }
 
 
 # ── FAISS 벡터 인덱싱 ────────────────────────────────────
@@ -326,12 +343,38 @@ def get_indexed_ids():
 
 # ── YouTube 관련곡 ───────────────────────────────────────
 
+_SKIP_KEYWORDS = re.compile(
+    r'가사|lyrics|lyric|뮤직뱅크|쇼챔|show.*core|inkigayo|인기가요|방송|뮤뱅|원테이크|노래방|karaoke|cover|커버|반주',
+    re.IGNORECASE
+)
+_PREFER_KEYWORDS = re.compile(r'\bmv\b|official|오피셜', re.IGNORECASE)
+
 def _search_video_id(query: str) -> str | None:
-    """yt_dlp로 YouTube 검색 후 첫 번째 videoId 반환"""
+    """yt_dlp로 YouTube 검색 후 MV 우선, 가사/방송 영상 제외해서 videoId 반환"""
     try:
         with yt_dlp.YoutubeDL(YDL_QUIET_OPTS) as ydl:
-            search = ydl.extract_info(f"ytsearch3:{query}", download=False)
-            for entry in search.get("entries", []):
+            search = ydl.extract_info(f"ytsearch5:{query} MV", download=False)
+            entries = search.get("entries", [])
+
+            # 1순위: MV/Official 키워드 있는 영상
+            for entry in entries:
+                title = entry.get("title", "")
+                vid = entry.get("id") or entry.get("url", "").split("v=")[-1]
+                if vid and len(vid) == 11:
+                    if _PREFER_KEYWORDS.search(title) and not _SKIP_KEYWORDS.search(title):
+                        logger.info(f"[YTMusic] MV 선택: {title} ({vid})")
+                        return vid
+
+            # 2순위: 방송/가사 영상 제외하고 첫 번째
+            for entry in entries:
+                title = entry.get("title", "")
+                vid = entry.get("id") or entry.get("url", "").split("v=")[-1]
+                if vid and len(vid) == 11 and not _SKIP_KEYWORDS.search(title):
+                    logger.info(f"[YTMusic] 일반 영상 선택: {title} ({vid})")
+                    return vid
+
+            # 폴백: 첫 번째
+            for entry in entries:
                 vid = entry.get("id") or entry.get("url", "").split("v=")[-1]
                 if vid and len(vid) == 11:
                     return vid
@@ -346,6 +389,9 @@ def _related_via_ytmusicapi(video_id: str, title: str, limit: int) -> list[dict]
     songs = []
     for t in tracks.get("tracks", []):
         t_title = t.get("title", "")
+        # 방송/가사 영상 제외
+        if _SKIP_KEYWORDS.search(t_title):
+            continue
         artists = t.get("artists") or []
         artist_name = artists[0].get("name", "") if artists else ""
         if t_title and t_title.lower() != title.lower():
@@ -366,6 +412,9 @@ def _related_via_ytdlp(video_id: str, title: str, limit: int) -> list[dict]:
         )
         for entry in info.get("entries", []):
             t_title  = entry.get("title", "")
+            # 방송/가사 영상 제외
+            if _SKIP_KEYWORDS.search(t_title):
+                continue
             uploader = entry.get("uploader") or entry.get("channel") or ""
             song_name, artist_name = _extract_song_info(t_title, uploader)
             if song_name and song_name.lower() != title.lower():

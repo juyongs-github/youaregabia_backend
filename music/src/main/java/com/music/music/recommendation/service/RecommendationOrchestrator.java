@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  *
  * 세 소스를 병렬 호출 후 결과를 병합한다:
  *   1. Last.fm  — 유사곡/유사아티스트 기반 (기존 로직 재사용)
- *   2. Qdrant   — 벡터 유사도 기반 (장르·분위기 유사곡)
+ *   2. FAISS   — 벡터 유사도 기반 (장르·분위기 유사곡)
  *   3. ytmusic  — YouTube Music 라디오 기반 (함께 자주 들리는 곡)
  *
  * 각 소스의 실패는 다른 소스에 영향을 주지 않는다.
@@ -41,9 +41,6 @@ public class RecommendationOrchestrator {
     private static final int CANDIDATE_MULTIPLIER = 3;
     /** 매 추천에서 고정으로 포함할 최고 점수 곡 수 */
     private static final int PINNED_TOP_COUNT = 2;
-    /** 최종 결과에서 YtMusic 소스로 보장할 최소 슬롯 수 */
-    private static final int YTMUSIC_MIN_SLOTS = 3;
-
     private final MusicApiService musicApiService;
     private final VectorSearchService vectorSearchService;
     private final YtMusicService ytMusicService;
@@ -152,10 +149,31 @@ public class RecommendationOrchestrator {
             else                                    vectorPool.add(dto);
         }
 
-        // 5) 소스별 최소 슬롯 보장
-        int ytSlots     = Math.min(YTMUSIC_MIN_SLOTS, ytPool.size());
-        int lastFmSlots = Math.min(YTMUSIC_MIN_SLOTS, lastFmPool.size());
-        int vectorSlots = Math.max(0, limit - ytSlots - lastFmSlots);
+        // 5) 1:2:2 비율 (lastfm : vector : ytmusic) 슬롯 배분
+        // 각 소스 실제 가용량을 반영해 남은 슬롯을 재분배
+        int lastFmTarget = Math.max(1, limit / 5);
+        int vectorTarget = Math.max(1, limit * 2 / 5);
+        int ytTarget     = limit - lastFmTarget - vectorTarget;
+
+        int lastFmSlots = Math.min(lastFmTarget, lastFmPool.size());
+        int vectorSlots = Math.min(vectorTarget, vectorPool.size());
+        int ytSlots     = Math.min(ytTarget,     ytPool.size());
+
+        // 가용량 부족 소스의 남은 슬롯을 다른 소스에 보충 (vector 우선)
+        int remaining = limit - lastFmSlots - vectorSlots - ytSlots;
+        if (remaining > 0) {
+            int vectorExtra = Math.min(remaining, vectorPool.size() - vectorSlots);
+            vectorSlots += vectorExtra;
+            remaining -= vectorExtra;
+        }
+        if (remaining > 0) {
+            int ytExtra = Math.min(remaining, ytPool.size() - ytSlots);
+            ytSlots += ytExtra;
+            remaining -= ytExtra;
+        }
+        if (remaining > 0) {
+            lastFmSlots += Math.min(remaining, lastFmPool.size() - lastFmSlots);
+        }
 
         // 각 소스 내에서 상위 PINNED_TOP_COUNT 고정 + 나머지 랜덤
         List<RecommendedSongDto> result = new ArrayList<>();

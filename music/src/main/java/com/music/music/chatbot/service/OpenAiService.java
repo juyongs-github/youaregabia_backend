@@ -70,9 +70,11 @@ public class OpenAiService {
         this.chatClient = chatClientBuilder.build();
     }
 
-    public String getResponse(String message, List<ChatMessage> history, Integer age, List<String> previousRecommendations, List<String> chartContext) {
+    public String getResponse(String message, List<ChatMessage> history, Integer age,
+                              List<String> previousRecommendations, List<String> chartContext,
+                              String similarSongsContext) {
         try {
-            String content = chatClient.prompt(new Prompt(buildMessages(message, history, age, previousRecommendations, chartContext)))
+            String content = chatClient.prompt(new Prompt(buildMessages(message, history, age, previousRecommendations, chartContext, similarSongsContext)))
                     .call()
                     .content();
             if (content == null || content.isBlank()) {
@@ -86,7 +88,9 @@ public class OpenAiService {
         }
     }
 
-    private List<Message> buildMessages(String message, List<ChatMessage> history, Integer age, List<String> previousRecommendations, List<String> chartContext) {
+    private List<Message> buildMessages(String message, List<ChatMessage> history, Integer age,
+                                         List<String> previousRecommendations, List<String> chartContext,
+                                         String similarSongsContext) {
         List<Message> messages = new ArrayList<>();
 
         String systemPrompt = SYSTEM_PROMPT;
@@ -100,6 +104,10 @@ public class OpenAiService {
                     + chartList
                     + "\n위 차트 데이터는 실시간으로 수집된 최신 인기곡입니다. "
                     + "사용자가 최신/요즘/인기 음악을 요청하면 이 목록에서 우선적으로 추천하세요.";
+        }
+        if (similarSongsContext != null && !similarSongsContext.isBlank()) {
+            systemPrompt += "\n\n" + similarSongsContext
+                    + "\n위 유사곡 분석 결과를 참고하여 추천하되, 각 곡의 추천 이유도 함께 설명해주세요.";
         }
         if (previousRecommendations != null && !previousRecommendations.isEmpty()) {
             // 곡명 목록만 전달 (전체 AI 응답 대신 파싱된 곡명만 사용해 토큰 절약)

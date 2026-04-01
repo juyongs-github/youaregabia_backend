@@ -107,3 +107,20 @@ music/src/main/resources/application.yml
 
 # Docker 환경변수 (민감정보)
 .env
+
+# Local assistant/editor settings
+.claude/settings.local.json
+.claude/settings.json
+.vscode/launch.json
+
+# Local build cache
+.gradle-user-home/
+
+# Python local artifacts
+ytmusic-service/venv/
+ytmusic-service/__pycache__/
+ytmusic-service/*.pyc
+ytmusic-service/songs.index
+ytmusic-service/songs_meta.json
+ytmusic-service/songs_audio.index
+ytmusic-service/songs_audio_meta.json

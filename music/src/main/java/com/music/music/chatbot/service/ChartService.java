@@ -3,6 +3,7 @@ package com.music.music.chatbot.service;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -21,11 +22,18 @@ public class ChartService {
 
     // Apple Music RSS Feed — API 키 불필요, 무료
     private static final String KOREA_CHART_URL =
-            "https://rss.applemarketingtools.com/api/v2/kr/music/top-songs/20/songs.json";
+            "https://rss.applemarketingtools.com/api/v2/kr/music/most-played/20/songs.json";
     private static final String GLOBAL_CHART_URL =
-            "https://rss.applemarketingtools.com/api/v2/us/music/top-songs/20/songs.json";
+            "https://rss.applemarketingtools.com/api/v2/us/music/most-played/20/songs.json";
 
-    private final RestClient restClient = RestClient.create();
+    private final RestClient restClient;
+
+    public ChartService() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(5000);
+        this.restClient = RestClient.builder().requestFactory(factory).build();
+    }
 
     // 캐시: 스케줄러가 1시간마다 갱신
     private volatile List<String> chartCache = Collections.emptyList();

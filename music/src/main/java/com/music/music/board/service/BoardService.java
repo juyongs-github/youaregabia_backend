@@ -50,6 +50,8 @@ public class BoardService {
         private final BoardLikeRepository boardLikeRepository;
         private final UserPointService userPointService;
 
+        private static final int POPULAR_LIKE_MIN = 5;
+
         public PageResultDTO<BoardDto> getBoardList(PageRequestDTO dto, String keyword, String genre,
                         String boardType) {
                 log.info(" 요청 - page: {}, size: {}", dto.getPage(), dto.getSize());
@@ -272,5 +274,20 @@ public class BoardService {
                                 .totalCount(result.getTotalElements())
                                 .pageRequestDTO(dto)
                                 .build();
+        }
+
+        @Transactional(readOnly = true)
+        public List<BoardDto> getPopularBoards(String boardType) {
+        BoardType typeEnum = (boardType != null && !boardType.isEmpty())
+            ? BoardType.valueOf(boardType)
+            : null;
+
+        List<Board> boards = (typeEnum != null)
+            ? boardRepository.findPopularBoards(POPULAR_LIKE_MIN, typeEnum)
+            : boardRepository.findPopularBoardsAll(POPULAR_LIKE_MIN);
+
+        return boards.stream()
+            .map(BoardDto::new)  // 기존 BoardDto 생성자 재사용
+            .toList();
         }
 }

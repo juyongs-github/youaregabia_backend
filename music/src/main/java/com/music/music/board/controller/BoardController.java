@@ -1,5 +1,8 @@
 package com.music.music.board.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -75,6 +78,12 @@ public class BoardController {
             PageRequestDTO dto,
             @RequestParam(required = false) String keyword) {
         return boardService.getCriticList(dto, keyword);
+    }
+
+    @GetMapping("/popular")
+    public List<BoardDto> getPopularBoards(
+            @RequestParam(required = false) String boardType) {
+        return boardService.getPopularBoards(boardType);
     }
 
 }

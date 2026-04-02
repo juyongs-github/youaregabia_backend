@@ -88,4 +88,11 @@ public class OrderService {
                 .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
         order.updateTracking(carrierId, trackingNumber);
     }
+
+    @Transactional
+    public void deleteOrder(Long orderId) {
+        GoodsOrder order = goodsOrderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+        goodsOrderRepository.delete(order);
+    }
 }

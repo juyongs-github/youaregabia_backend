@@ -223,6 +223,13 @@ public class BoardService {
                 board.delete();
         }
 
+        @Transactional
+        public void adminDeleteBoard(Long boardId) {
+                Board board = boardRepository.findByBoardIdAndDeletedFalse(boardId)
+                                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다."));
+                board.delete();
+        }
+
         // 곡 기준으로 평론 조회
         @Transactional(readOnly = true)
         public PageResultDTO<BoardDto> getCriticBoards(Long songId, PageRequestDTO dto) {

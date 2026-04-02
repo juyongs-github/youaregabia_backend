@@ -21,6 +21,7 @@ public class OrderDto {
     private List<OrderItemDto> items;
     private String carrierId;
     private String trackingNumber;
+    private String userEmail;
 
     public OrderDto(GoodsOrder o) {
         this.orderId = o.getOrderId();
@@ -34,6 +35,7 @@ public class OrderDto {
         this.items = o.getOrderItems().stream().map(OrderItemDto::new).toList();
         this.carrierId = o.getCarrierId();
         this.trackingNumber = o.getTrackingNumber();
+        this.userEmail = o.getUser() != null ? o.getUser().getEmail() : null;
     }
 
     @Getter

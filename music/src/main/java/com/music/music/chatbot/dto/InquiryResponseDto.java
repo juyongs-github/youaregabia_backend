@@ -14,6 +14,8 @@ public class InquiryResponseDto {
     private final String content;
     private final String status;
     private final LocalDateTime createdAt;
+    private final String email;
+    private final String userName;
 
     public InquiryResponseDto(Inquiry inquiry) {
         this.id = inquiry.getId();
@@ -21,5 +23,7 @@ public class InquiryResponseDto {
         this.content = inquiry.getContent();
         this.status = inquiry.getStatus() == InquiryStatus.PENDING ? "접수중" : "답변완료";
         this.createdAt = inquiry.getCreatedAt();
+        this.email = inquiry.getEmail();
+        this.userName = inquiry.getUser() != null ? inquiry.getUser().getName() : null;
     }
 }

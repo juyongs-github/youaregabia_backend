@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,6 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.music.music.board.repository.BoardRepository;
 import com.music.music.board.repository.ReplyRepository;
+import com.music.music.board.service.BoardService;
+import com.music.music.board.service.ReplyService;
+import com.music.music.chatbot.dto.InquiryResponseDto;
+import com.music.music.chatbot.entity.InquiryStatus;
+import com.music.music.chatbot.service.InquiryService;
 import com.music.music.goods.dto.OrderDto;
 import com.music.music.goods.entity.OrderStatus;
 import com.music.music.goods.service.OrderService;
@@ -39,10 +45,13 @@ public class AdminController {
   private final UserLoginLogRepository loginLogRepository;
   private final BoardRepository boardRepository;
   private final ReplyRepository replyRepository;
+  private final BoardService boardService;
+  private final ReplyService replyService;
   private final OrderService orderService;
   private final UserPointRepository userPointRepository;
   private final UserPointService userPointService;
   private final PointHistoryRepository pointHistoryRepository;
+  private final InquiryService inquiryService;
 
   // 전체 유저 목록 조회
   @GetMapping("/users")
@@ -83,18 +92,32 @@ public class AdminController {
     boardRepository.findAll().stream()
         .filter(b -> !b.isDeleted())
         .forEach(b -> combined.add(new ActivityLogDto(
-            "게시글", b.getUser().getName(), b.getUser().getEmail(),
+            "게시글", b.getBoardId(), b.getUser().getName(), b.getUser().getEmail(),
             b.getTitle(), b.getCreatedAt())));
 
     replyRepository.findAll().stream()
         .filter(r -> !r.isDeleted())
         .forEach(r -> combined.add(new ActivityLogDto(
-            "댓글", r.getUser().getName(), r.getUser().getEmail(),
+            "댓글", r.getReplyId(), r.getUser().getName(), r.getUser().getEmail(),
             r.getContent().length() > 30 ? r.getContent().substring(0, 30) + "..." : r.getContent(),
             r.getCreatedAt())));
 
     combined.sort((a, b) -> b.createdAt().compareTo(a.createdAt()));
     return ResponseEntity.ok(combined.subList(0, Math.min(100, combined.size())));
+  }
+
+  // 게시글 삭제 (관리자)
+  @DeleteMapping("/boards/{boardId}")
+  public ResponseEntity<Void> deleteBoard(@PathVariable Long boardId) {
+    boardService.adminDeleteBoard(boardId);
+    return ResponseEntity.ok().build();
+  }
+
+  // 댓글 삭제 (관리자)
+  @DeleteMapping("/replies/{replyId}")
+  public ResponseEntity<Void> deleteReply(@PathVariable Long replyId) {
+    replyService.adminDeleteReply(replyId);
+    return ResponseEntity.ok().build();
   }
 
   // 전체 주문 조회
@@ -118,6 +141,13 @@ public class AdminController {
       @PathVariable Long orderId,
       @RequestBody Map<String, String> body) {
     orderService.updateTracking(orderId, body.get("carrierId"), body.get("trackingNumber"));
+    return ResponseEntity.ok().build();
+  }
+
+  // 주문 삭제 (탈퇴 회원 내역 정리용)
+  @DeleteMapping("/orders/{orderId}")
+  public ResponseEntity<Void> deleteOrder(@PathVariable Long orderId) {
+    orderService.deleteOrder(orderId);
     return ResponseEntity.ok().build();
   }
 
@@ -164,6 +194,21 @@ public class AdminController {
     return ResponseEntity.ok(logs);
   }
 
+  // 전체 문의 내역 조회
+  @GetMapping("/inquiries")
+  public ResponseEntity<List<InquiryResponseDto>> getAllInquiries() {
+    return ResponseEntity.ok(inquiryService.getAllInquiries());
+  }
+
+  // 문의 상태 변경 (접수중 → 답변완료)
+  @PatchMapping("/inquiries/{id}/status")
+  public ResponseEntity<Void> updateInquiryStatus(
+      @PathVariable Long id,
+      @RequestBody Map<String, String> body) {
+    inquiryService.updateStatus(id, InquiryStatus.valueOf(body.get("status")));
+    return ResponseEntity.ok().build();
+  }
+
   public record AdminPointLogDto(
       Long id,
       String name,
@@ -191,6 +236,7 @@ public class AdminController {
 
   public record ActivityLogDto(
       String type,
+      Long targetId,
       String name,
       String email,
       String content,

@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReviewRequestDto {
     private Long playlistId;
     private String userEmail;

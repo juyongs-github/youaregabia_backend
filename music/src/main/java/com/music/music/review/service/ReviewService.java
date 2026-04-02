@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 @Service
@@ -120,8 +121,29 @@ public class ReviewService {
     }
 
     public List<SongDTO> getReviewSongs(Long reviewId) {
-        return reviewSongRepository.findByReviewIdWithSong(reviewId).stream()
-                .map(rs -> songToDto(rs.getSong()))
+        List<SongDTO> snapshotSongs = reviewSongRepository.findByReviewIdWithSong(reviewId).stream()
+                .map(ReviewSong::getSong)
+                .map(this::songToDto)
+                .toList();
+
+        if (!snapshotSongs.isEmpty()) {
+            return snapshotSongs;
+        }
+
+        // 과거 데이터/이행 구간 대응: 스냅샷이 비어있으면 현재 플레이리스트 곡으로 보강
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
+
+        return playlistSongRepository.findByPlaylistIdWithSong(review.getPlaylist().getId()).stream()
+                .map(PlaylistSong::getSong)
+                .map(this::songToDto)
+                .collect(java.util.stream.Collectors.toMap(
+                        SongDTO::getId,
+                        s -> s,
+                        (a, b) -> a,
+                        LinkedHashMap::new))
+                .values()
+                .stream()
                 .toList();
     }
 

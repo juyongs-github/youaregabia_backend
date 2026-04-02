@@ -5,6 +5,7 @@ import com.music.music.chatbot.dto.ChatRequest;
 import com.music.music.chatbot.dto.ChatResponse;
 import com.music.music.chatbot.dto.ChatSessionDto;
 import com.music.music.chatbot.service.ChatbotService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,7 +23,7 @@ public class ChatbotController {
     // 메시지 전송
     @PostMapping("/message")
     public ResponseEntity<ChatResponse> sendMessage(
-            @RequestBody ChatRequest request,
+            @Valid @RequestBody ChatRequest request,
             @AuthenticationPrincipal String email) {
         ChatResponse response = chatbotService.processMessage(request, email);
         return ResponseEntity.ok(response);

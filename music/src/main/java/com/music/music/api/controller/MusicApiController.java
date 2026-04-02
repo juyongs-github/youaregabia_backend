@@ -24,6 +24,7 @@ import com.music.music.recommendation.service.VectorSearchService;
 
 @RestController
 public class MusicApiController {
+  private static final int DEFAULT_RECOMMENDATION_LIMIT = 20;
   private Logger logger = LoggerFactory.getLogger(MusicApiController.class);
 
   @Autowired
@@ -55,7 +56,7 @@ public class MusicApiController {
       @RequestParam("trackName") String trackName,
       @RequestParam("artistName") String artistName,
       @RequestParam(value = "genre", required = false) String genre) {
-    return recommendationOrchestrator.recommend(trackName, artistName, genre, 15);
+    return recommendationOrchestrator.recommend(trackName, artistName, genre, DEFAULT_RECOMMENDATION_LIMIT);
   }
 
   @GetMapping("/api/vector/index-all")

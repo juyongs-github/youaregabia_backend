@@ -13,7 +13,7 @@ public class RecommendedSongDto {
     /** 사용자에게 보여줄 추천 이유 */
     private String reason;
 
-    /** 추천 소스: "lastfm" | "vector" | "ytmusic" */
+    /** 추천 소스: "lastfm" | "vector" */
     private String source;
 
     /** 유사도 점수 (0.0 ~ 1.0) */

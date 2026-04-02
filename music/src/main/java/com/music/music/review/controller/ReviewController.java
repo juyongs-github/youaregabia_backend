@@ -39,13 +39,13 @@ public class ReviewController {
     }
 
     @GetMapping("/{reviewId}/songs")
-    public ResponseEntity<List<SongDTO>> getReviewSongs(@PathVariable Long reviewId) {
+    public ResponseEntity<List<SongDTO>> getReviewSongs(@PathVariable(name = "reviewId") Long reviewId) {
         return ResponseEntity.ok(reviewService.getReviewSongs(reviewId));
     }
 
     @PutMapping("/{reviewId}")
     public ResponseEntity<ReviewDto> updateReview(
-            @PathVariable Long reviewId,
+            @PathVariable(name = "reviewId") Long reviewId,
             @RequestBody ReviewRequestDto request) {
         Integer rating = null;
         if (request.getRating() != null) {
@@ -55,7 +55,7 @@ public class ReviewController {
     }
 
     @DeleteMapping("/{reviewId}")
-    public ResponseEntity<Void> deleteReview(@PathVariable Long reviewId) {
+    public ResponseEntity<Void> deleteReview(@PathVariable(name = "reviewId") Long reviewId) {
         reviewService.deleteReview(reviewId);
         return ResponseEntity.noContent().build();
     }

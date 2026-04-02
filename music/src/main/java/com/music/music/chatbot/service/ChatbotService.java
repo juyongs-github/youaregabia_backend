@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,6 +47,8 @@ public class ChatbotService {
     private static final int HISTORY_LIMIT = 20; // 프롬프트에 포함할 최근 메시지 수
 
     private static final int MAX_MESSAGE_LENGTH = 300;
+
+    private static final int CROSS_SESSION_HISTORY_LIMIT = 5;
 
     private static final List<String> BLOCKED_WORDS = List.of(
             "씨발", "시발", "개새끼", "ㅅㅂ", "ㅂㅅ", "병신", "지랄", "닥쳐", "죽어", "꺼져",
@@ -83,14 +86,25 @@ public class ChatbotService {
             "문의", "챗봇", "신고", "불편", "도움말", "어떤 기능", "무슨 기능", "뭐 할 수"
     );
 
+    private static final List<String> RECOMMENDATION_KEYWORDS = List.of(
+            "추천", "추천해", "추천해줘", "어울리는", "듣고 싶", "들려줘",
+            "플레이리스트 짜", "선곡", "노래 골라", "음악 골라", "곡 골라"
+    );
+
+    private static final List<String> CONTEXTUAL_FOLLOW_UP_KEYWORDS = List.of(
+            "이 노래", "이 곡", "그 노래", "그 곡", "방금 추천", "아까 추천",
+            "첫 번째", "두 번째", "세 번째", "이 노래들", "이 곡들", "그 노래들"
+    );
+
     @Transactional
     public ChatResponse processMessage(ChatRequest request, String email) {
-        String message = request.getMessage();
-
-        // 0. 입력 검증
-        if (message == null || message.isBlank()) {
+        String rawMessage = request.getMessage();
+        if (rawMessage == null || rawMessage.isBlank()) {
             return new ChatResponse("질문을 입력해주세요 🎵", "rule", request.getSessionId());
         }
+        String message = rawMessage.trim();
+
+        // 0. 입력 검증
         if (message.length() > MAX_MESSAGE_LENGTH) {
             return new ChatResponse("질문이 너무 깁니다. " + MAX_MESSAGE_LENGTH + "자 이내로 입력해주세요.", "rule", request.getSessionId());
         }
@@ -125,7 +139,7 @@ public class ChatbotService {
         }
 
         // 3. 세션에서 히스토리 로드
-        ChatSession session = getOrCreateSession(request.getSessionId(), user);
+        ChatSession session = getOrCreateSession(request.getSessionId(), user, email);
         List<ChatMessage> history = chatMessageRepository.findRecentMessages(session.getId(), PageRequest.of(0, HISTORY_LIMIT));
         Collections.reverse(history); // DESC로 가져온 것을 시간순으로 복원
 
@@ -133,7 +147,7 @@ public class ChatbotService {
         List<String> previousSongTitles = getPreviousRecommendedSongs(user, session.getId(), history);
 
         // 5. 곡 정보 요청 여부 판단 (발매일·가사 등 순수 정보 질문이면 중복 방지 목록 전달 안 함)
-        boolean isFollowUp = isSongInfoQuery(message);
+        boolean isFollowUp = isFollowUpQuestion(message, history);
 
         // 5-1. 차트 컨텍스트 — 항상 주입 (캐시 데이터라 비용 없음, 후속 메시지에도 최신 차트 유지)
         List<String> chartContext = chartService.getChart();
@@ -154,7 +168,14 @@ public class ChatbotService {
 
         // 6. AI 호출 (후속 질문이면 중복 방지 목록 전달 안 함 — AI가 새 추천으로 오해 방지)
         List<String> titlesToPass = isFollowUp ? null : previousSongTitles;
-        String aiResponse = openAiService.getResponse(message, history, age, titlesToPass, chartContext, similarSongsContext);
+        String aiResponse = openAiService.getResponse(
+                message,
+                history,
+                age,
+                titlesToPass,
+                chartContext,
+                similarSongsContext,
+                isFollowUp);
 
         // 6-1. iTunes로 추천 곡 검증 — 후속 질문이 아니고 40% 미만이면 1회 재시도
         if (!isFollowUp) {
@@ -165,7 +186,14 @@ public class ChatbotService {
                     logger.info("[ChatbotService] iTunes 검증률 낮음({}%), AI 재호출", String.format("%.0f", rate * 100));
                     List<String> enrichedTitles = new ArrayList<>(previousSongTitles);
                     enrichedTitles.addAll(itunesService.extractSongTitles(aiResponse));
-                    aiResponse = openAiService.getResponse(message, history, age, enrichedTitles, chartContext, similarSongsContext);
+                    aiResponse = openAiService.getResponse(
+                            message,
+                            history,
+                            age,
+                            enrichedTitles,
+                            chartContext,
+                            similarSongsContext,
+                            false);
                 }
             }
         }
@@ -201,13 +229,13 @@ public class ChatbotService {
         // 다른 세션 최근 5개에서 추출
         if (user != null) {
             chatMessageRepository
-                    .findRecentAssistantMessagesFromOtherSessions(user.getId(), currentSessionId, PageRequest.of(0, 5))
+                    .findRecentAssistantMessagesFromOtherSessions(user.getId(), currentSessionId, PageRequest.of(0, CROSS_SESSION_HISTORY_LIMIT))
                     .stream()
                     .flatMap(m -> itunesService.extractSongTitles(m.getContent()).stream())
                     .forEach(songTitles::add);
         }
 
-        return songTitles.stream().distinct().collect(Collectors.toList());
+        return new ArrayList<>(new LinkedHashSet<>(songTitles));
     }
 
     // 세션 목록 조회
@@ -243,11 +271,16 @@ public class ChatbotService {
 
     // --- private helpers ---
 
-    private ChatSession getOrCreateSession(String sessionId, User user) {
+    private ChatSession getOrCreateSession(String sessionId, User user, String email) {
         if (sessionId != null) {
             Optional<ChatSession> existing = chatSessionRepository.findBySessionKey(sessionId);
             if (existing.isPresent()) {
-                return existing.get();
+                ChatSession session = existing.get();
+                validateConversationAccess(session, email);
+                if (session.getUser() == null && user != null) {
+                    session.assignUser(user);
+                }
+                return session;
             }
         }
         return chatSessionRepository.save(ChatSession.builder()
@@ -261,11 +294,20 @@ public class ChatbotService {
         if (email != null) {
             user = userRepository.findByEmail(email).orElse(null);
         }
-        ChatSession session = getOrCreateSession(sessionId, user);
+        ChatSession session = getOrCreateSession(sessionId, user, email);
         chatMessageRepository.save(ChatMessage.builder().session(session).role("user").content(userMsg).build());
         chatMessageRepository.save(ChatMessage.builder().session(session).role("assistant").content(assistantMsg).build());
         session.touch();
         return session.getSessionKey();
+    }
+
+    private void validateConversationAccess(ChatSession session, String email) {
+        if (session.getUser() == null) {
+            return;
+        }
+        if (email == null || !session.getUser().getEmail().equals(email)) {
+            throw new IllegalArgumentException("이 대화 세션에 접근할 수 없습니다.");
+        }
     }
 
     private void validateOwner(ChatSession session, String email) {
@@ -284,12 +326,35 @@ public class ChatbotService {
         String lower = message.toLowerCase();
         boolean hasGuideKeyword = GUIDE_KEYWORDS.stream().anyMatch(lower::contains);
         boolean hasFeatureKeyword = FEATURE_KEYWORDS.stream().anyMatch(lower::contains);
+        boolean hasRecommendationKeyword = RECOMMENDATION_KEYWORDS.stream().anyMatch(lower::contains);
+
+        if (hasFeatureKeyword && !hasRecommendationKeyword) {
+            return true;
+        }
+
         return hasGuideKeyword && hasFeatureKeyword;
     }
 
     private boolean isSongInfoQuery(String message) {
         String lower = message.toLowerCase();
         return SONG_INFO_KEYWORDS.stream().anyMatch(lower::contains);
+    }
+
+    private boolean isFollowUpQuestion(String message, List<ChatMessage> history) {
+        if (history == null || history.isEmpty()) {
+            return false;
+        }
+
+        if (isSongInfoQuery(message)) {
+            return true;
+        }
+
+        String lower = message.toLowerCase();
+        boolean refersToExistingSong = CONTEXTUAL_FOLLOW_UP_KEYWORDS.stream().anyMatch(lower::contains);
+        boolean asksForRecommendation = RECOMMENDATION_KEYWORDS.stream().anyMatch(lower::contains) || isSimilarSongQuery(message);
+        boolean hasAssistantSongContext = extractSeedSong(history) != null;
+
+        return refersToExistingSong && hasAssistantSongContext && !asksForRecommendation;
     }
 
     private boolean isSimilarSongQuery(String message) {

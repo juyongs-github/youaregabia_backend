@@ -54,4 +54,9 @@ public class ChatSession {
     public void touch() {
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void assignUser(User user) {
+        this.user = user;
+        touch();
+    }
 }

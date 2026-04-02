@@ -29,7 +29,9 @@ public class Inquiry {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
-    private String email; // 비로그인 사용자 이메일
+    private String email; // 이메일 알림 수신용
+
+    private String phone; // 문자 알림 수신용
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

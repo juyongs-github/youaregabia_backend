@@ -18,7 +18,7 @@ public interface PlaylistRepository extends JpaRepository<Playlist, Long> {
     List<Playlist> findByType(PlaylistType type);
 
     @Query("SELECT p FROM Playlist p JOIN FETCH p.user WHERE p.type = :type ORDER BY p.createdAt DESC")
-    List<Playlist> findByTypeWithUser(PlaylistType type);
+    List<Playlist> findByTypeWithUser(@Param("type") PlaylistType type);
 
     // 마감 시간이 지난 공동 플레이리스트 조회 (스케줄러용)
     @Query("SELECT p FROM Playlist p WHERE p.type = 'COLLABORATIVE' AND p.deadline IS NOT NULL AND p.deadline < :now")

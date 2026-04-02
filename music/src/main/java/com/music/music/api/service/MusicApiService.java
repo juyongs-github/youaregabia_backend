@@ -3,6 +3,7 @@ package com.music.music.api.service;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -24,10 +25,10 @@ import com.music.music.api.dto.TrackDTO;
 import com.music.music.playlist.dto.SongDTO;
 import com.music.music.playlist.entity.Song;
 import com.music.music.playlist.repository.SongRepository;
-import com.music.music.recommendation.service.VectorSearchService;
 
 @Service
 public class MusicApiService {
+    private static final int RECOMMENDATION_MAX_RESULTS = 12;
 
     @Autowired
     private SongIndexingService songIndexingService;
@@ -50,9 +51,6 @@ public class MusicApiService {
 
     @Autowired
     private ModelMapper modelMapper;
-
-    @Autowired
-    private VectorSearchService vectorSearchService;
 
     // iTunes 검색 전용
     private ItunesSearchResponse getItunesTrackInfo(String term, String attribute, int limit) {
@@ -202,9 +200,32 @@ public class MusicApiService {
     @Transactional
     public List<SongDTO> getRecommendSongList(String trackName, String artistName) {
         List<SongDTO> resultList = new ArrayList<>();
+        long startedAt = System.nanoTime();
         try {
-            List<SongDTO> similarTrackList = getSimilarTrackRecommendSongList(trackName, artistName);
-            List<SongDTO> similarArtistList = getSimilarArtistRecommendSongList(trackName, artistName);
+            long trackPhaseStartedAt = System.nanoTime();
+            // 정확도 우선 단계 → 결과가 없으면 점진 완화
+            List<SongDTO> similarTrackList = getSimilarTrackRecommendSongList(trackName, artistName, 0.70);
+            if (similarTrackList.isEmpty()) {
+                similarTrackList = getSimilarTrackRecommendSongList(trackName, artistName, 0.45);
+            }
+            if (similarTrackList.isEmpty()) {
+                similarTrackList = getSimilarTrackRecommendSongList(trackName, artistName, 0.30);
+            }
+            long trackPhaseElapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - trackPhaseStartedAt);
+
+            List<SongDTO> similarArtistList = new ArrayList<>();
+            long artistPhaseElapsedMs = 0L;
+            if (similarTrackList.isEmpty()) {
+                long artistPhaseStartedAt = System.nanoTime();
+                similarArtistList = getSimilarArtistRecommendSongList(trackName, artistName, 0.70);
+                if (similarArtistList.isEmpty()) {
+                    similarArtistList = getSimilarArtistRecommendSongList(trackName, artistName, 0.45);
+                }
+                if (similarArtistList.isEmpty()) {
+                    similarArtistList = getSimilarArtistRecommendSongList(trackName, artistName, 0.30);
+                }
+                artistPhaseElapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - artistPhaseStartedAt);
+            }
 
             if (!similarTrackList.isEmpty()) {
                 resultList = similarTrackList;
@@ -216,6 +237,10 @@ public class MusicApiService {
                     .collect(Collectors.toMap(SongDTO::getId, s -> s, (a, b) -> a, LinkedHashMap::new))
                     .values().stream().toList();
 
+            long totalElapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+            logger.info("[getRecommendSongList] 추천 결과 - trackBase={}곡, artistBase={}곡, dedup={}곡 (trackPhase={}ms, artistPhase={}ms, total={}ms)",
+                    similarTrackList.size(), similarArtistList.size(), resultList.size(),
+                    trackPhaseElapsedMs, artistPhaseElapsedMs, totalElapsedMs);
             return resultList;
         } catch (Exception e) {
             logger.error("[getRecommendSongList] 추천 곡 리스트 실패 - error: {}", e.getMessage());
@@ -224,7 +249,7 @@ public class MusicApiService {
     }
 
     // 유사곡 기반 추천
-    private List<SongDTO> getSimilarTrackRecommendSongList(String trackName, String artistName) {
+    private List<SongDTO> getSimilarTrackRecommendSongList(String trackName, String artistName, double minMatch) {
         List<SongDTO> resultList = new ArrayList<>();
         try {
             SimilarTracksResponse similarTracksResponse = getSimilarTracks(trackName, artistName);
@@ -236,8 +261,11 @@ public class MusicApiService {
                 return resultList;
 
             List<TrackDTO> filtered = similarTrackList.stream()
-                    .filter(track -> track.getMatch() >= 0.7)
+                    .filter(track -> track.getMatch() >= minMatch)
                     .collect(Collectors.toList());
+
+            logger.info("[getSimilarTrackRecommendSongList] '{}' - '{}' 필터 통과: {} / {} (minMatch={})",
+                    trackName, artistName, filtered.size(), similarTrackList.size(), minMatch);
 
             for (TrackDTO trackDTO : filtered) {
                 try {
@@ -253,11 +281,13 @@ public class MusicApiService {
                     SongDTO songDto = upgradeImageResolution(itunesSong);
 
                     Song song = modelMapper.map(songDto, Song.class);
-                    Song saved = songRepository.findById(songDto.getId())
+                    songRepository.findById(songDto.getId())
                             .orElseGet(() -> songRepository.save(song));
-                    vectorSearchService.indexSong(saved);
 
                     resultList.add(songDto);
+                    if (resultList.size() >= RECOMMENDATION_MAX_RESULTS) {
+                        return resultList;
+                    }
                 } catch (Exception e) {
                     logger.error("[getSimilarTrackRecommendSongList] 곡 처리 실패 - {}: {}",
                             trackDTO.getName(), e.getMessage());
@@ -271,7 +301,7 @@ public class MusicApiService {
     }
 
     // 유사 아티스트 기반 추천
-    private List<SongDTO> getSimilarArtistRecommendSongList(String trackName, String artistName) {
+    private List<SongDTO> getSimilarArtistRecommendSongList(String trackName, String artistName, double minMatch) {
         List<SongDTO> resultList = new ArrayList<>();
         try {
             SimilarArtistResponse similarArtistResponse = getSimilarArtists(artistName);
@@ -283,8 +313,11 @@ public class MusicApiService {
                 return resultList;
 
             List<ArtistDTO> filtered = similarArtistList.stream()
-                    .filter(artist -> artist.getMatch() >= 0.7)
+                    .filter(artist -> artist.getMatch() >= minMatch)
                     .collect(Collectors.toList());
+
+            logger.info("[getSimilarArtistRecommendSongList] '{}' 필터 통과: {} / {} (minMatch={})",
+                    artistName, filtered.size(), similarArtistList.size(), minMatch);
 
             for (ArtistDTO artistDTO : filtered) {
                 try {
@@ -299,11 +332,13 @@ public class MusicApiService {
                             SongDTO songDto = upgradeImageResolution(itunesSong);
 
                             Song song = modelMapper.map(songDto, Song.class);
-                            Song saved = songRepository.findById(songDto.getId())
+                            songRepository.findById(songDto.getId())
                                     .orElseGet(() -> songRepository.save(song));
-                            vectorSearchService.indexSong(saved);
 
                             resultList.add(songDto);
+                            if (resultList.size() >= RECOMMENDATION_MAX_RESULTS) {
+                                return resultList;
+                            }
                         } catch (Exception e) {
                             logger.error("[getSimilarArtistRecommendSongList] 곡 처리 실패 - {}: {}",
                                     itunesSong.getTrackName(), e.getMessage());

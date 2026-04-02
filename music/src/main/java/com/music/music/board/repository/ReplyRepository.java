@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.music.music.board.dto.ReplyResponseDto;
 import com.music.music.board.entity.Reply;
@@ -37,7 +38,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
     where r.board.boardId = :boardId and r.parentReply is null
     order by r.createdAt desc
     """)
-    Page<ReplyResponseDto> findRepliesLatest(Long boardId, String email, Pageable pageable);
+    Page<ReplyResponseDto> findRepliesLatest(@Param("boardId") Long boardId, @Param("email") String email, Pageable pageable);
     
 
 // 좋아요순 정렬 전용
@@ -56,7 +57,7 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
     where r.board.boardId = :boardId and r.parentReply is null
     order by (select count(rl3) from ReplyLike rl3 where rl3.reply = r) desc, r.createdAt desc
     """)
-    Page<ReplyResponseDto> findRepliesWithLikeInfo(Long boardId, String email, Pageable pageable);
+    Page<ReplyResponseDto> findRepliesWithLikeInfo(@Param("boardId") Long boardId, @Param("email") String email, Pageable pageable);
 
     // 대댓글 조회 (부모 댓글 ID로)
     @Query("""
@@ -70,5 +71,5 @@ public interface ReplyRepository extends JpaRepository<Reply, Long>{
         where r.parentReply.replyId = :parentReplyId
         order by r.createdAt asc
         """)
-    List<ReplyResponseDto> findChildren(Long parentReplyId, String email);
+    List<ReplyResponseDto> findChildren(@Param("parentReplyId") Long parentReplyId, @Param("email") String email);
 }

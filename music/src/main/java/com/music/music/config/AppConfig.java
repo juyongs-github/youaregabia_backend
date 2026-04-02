@@ -9,8 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
@@ -31,14 +29,8 @@ public class AppConfig {
     CacheManager cacheManager() {
         CaffeineCacheManager manager = new CaffeineCacheManager("itunesSongs");
         manager.setCaffeine(Caffeine.newBuilder()
-                .expireAfterWrite(1, TimeUnit.HOURS)
+                .expireAfterWrite(20, TimeUnit.MINUTES)
                 .maximumSize(2000));
         return manager;
-    }
-
-    /** 추천 작업 전용 스레드풀 — DB 커넥션 풀(30) 초과 방지 */
-    @Bean(name = "recommendationExecutor")
-    Executor recommendationExecutor() {
-        return Executors.newFixedThreadPool(8);
     }
 }

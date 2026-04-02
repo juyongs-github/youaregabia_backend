@@ -25,13 +25,20 @@ public class OpenAiService {
 
         [대화 규칙]
         - 친근하고 따뜻한 말투로 대화하세요.
-        - 음악 추천 시 반드시 다음 형식으로 곡명과 아티스트명을 작성하세요:
+        - 음악 추천 시 반드시 3~5곡을 아래 형식으로만 작성하세요:
+          1. "곡명" - 아티스트명
+             - 추천 이유: 이 곡이 왜 어울리는지 한 문장으로 설명
+          2. "곡명" - 아티스트명
+             - 추천 이유: 이 곡이 왜 어울리는지 한 문장으로 설명
+        - 곡명과 아티스트명은 반드시 다음 형식을 지키세요:
           "곡명" - 아티스트명
           예) "봄날" - BTS, "Blinding Lights" - The Weeknd
         - 반드시 실제로 존재하는 곡만 추천하세요. 확실하지 않은 곡은 추천하지 마세요.
-        - 추천 이유도 간단히 설명해주세요.
+        - 각 곡마다 반드시 개별 추천 이유를 바로 아래 줄에 작성하세요.
+        - 여러 곡을 추천한 뒤 마지막에 공통 설명만 따로 쓰지 마세요.
+        - 추천 이유가 없는 곡은 절대 출력하지 마세요.
         - 한국 음악과 해외 음악 모두 추천 가능합니다.
-        - 답변은 간결하게 3~5곡 정도 추천해주세요.
+        - 답변은 간결하게 유지하되, 각 곡의 추천 이유는 1문장으로 작성하세요.
         - 이전 대화 맥락을 반드시 유지하세요. 사용자가 조건을 추가하거나 수정하면
           이전 대화의 시대, 장르, 분위기 등의 조건을 유지한 채 새 조건을 반영하세요.
           예) 이전에 "1970년대 노래"를 추천했고 사용자가 "한국 노래로"라고 하면
@@ -72,9 +79,16 @@ public class OpenAiService {
 
     public String getResponse(String message, List<ChatMessage> history, Integer age,
                               List<String> previousRecommendations, List<String> chartContext,
-                              String similarSongsContext) {
+                              String similarSongsContext, boolean followUpQuestion) {
         try {
-            String content = chatClient.prompt(new Prompt(buildMessages(message, history, age, previousRecommendations, chartContext, similarSongsContext)))
+            String content = chatClient.prompt(new Prompt(buildMessages(
+                            message,
+                            history,
+                            age,
+                            previousRecommendations,
+                            chartContext,
+                            similarSongsContext,
+                            followUpQuestion)))
                     .call()
                     .content();
             if (content == null || content.isBlank()) {
@@ -90,7 +104,7 @@ public class OpenAiService {
 
     private List<Message> buildMessages(String message, List<ChatMessage> history, Integer age,
                                          List<String> previousRecommendations, List<String> chartContext,
-                                         String similarSongsContext) {
+                                         String similarSongsContext, boolean followUpQuestion) {
         List<Message> messages = new ArrayList<>();
 
         String systemPrompt = SYSTEM_PROMPT;
@@ -116,7 +130,11 @@ public class OpenAiService {
                     .collect(java.util.stream.Collectors.joining("\n"));
             systemPrompt += "\n\n[중복 방지] 아래 곡들은 이미 추천한 곡입니다. 절대 다시 추천하지 마세요:\n" + songList;
         }
-        systemPrompt += "\n항상 이전에 추천하지 않은 새로운 곡을 추천해주세요.";
+        if (followUpQuestion) {
+            systemPrompt += "\n이번 질문은 이전에 언급된 곡이나 아티스트에 대한 후속 질문입니다. 새로운 추천을 시작하지 말고 맥락을 이어서 직접 답변하세요.";
+        } else {
+            systemPrompt += "\n항상 이전에 추천하지 않은 새로운 곡을 추천해주세요.";
+        }
         messages.add(new SystemMessage(systemPrompt));
 
         if (history != null) {

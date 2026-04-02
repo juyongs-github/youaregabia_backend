@@ -14,10 +14,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -29,8 +36,16 @@ import java.util.stream.Collectors;
 public class VectorSearchService {
 
     private static final Logger logger = LoggerFactory.getLogger(VectorSearchService.class);
+    private static final double MIN_SIMILARITY_SCORE_STRICT = 0.60;
+    private static final double MIN_SIMILARITY_SCORE_RELAXED = 0.52;
+    private static final int MIN_STRICT_RESULTS = 6;
+    private static final long MIN_REASONABLE_DURATION_MS = 90_000L;
+    private static final long MAX_REASONABLE_DURATION_MS = 720_000L;
+    private static final List<String> LOW_QUALITY_KEYWORDS = Arrays.asList(
+            "inst", "instrumental", "mr", "노래방", "karaoke", "반주",
+            "명상", "meditation", "healing", "힐링", "study", "공부", "asmr");
 
-    @Value("${ytmusic.service.url}")
+    @Value("${vector.service.url}")
     private String pythonServiceUrl;
 
     private RestClient pythonClient;
@@ -58,17 +73,14 @@ public class VectorSearchService {
                     .body(java.util.Map.class);
             vectorAvailable = true;
             if (status != null) {
-                boolean ytmusicAuth      = Boolean.TRUE.equals(status.get("ytmusic_auth"));
-                boolean ytmusicAvailable = Boolean.TRUE.equals(status.get("ytmusic_available"));
                 Object textVectors  = status.get("faiss_text_vectors");
                 Object audioVectors = status.get("faiss_audio_vectors");
                 logger.info("[Python 서버] 연결 완료 - {}", pythonServiceUrl);
-                logger.info("[Python 서버] YTMusic 인증: {} / 사용가능: {}", ytmusicAuth ? "O" : "X", ytmusicAvailable ? "O" : "X");
                 logger.info("[Python 서버] FAISS 벡터 - 텍스트: {}개 / 오디오: {}개", textVectors, audioVectors);
             }
         } catch (Exception e) {
             vectorAvailable = false;
-            logger.warn("[Python 서버] 연결 불가 — 벡터/YTMusic 검색 비활성화 (Python 서버 확인 필요)");
+            logger.warn("[Python 서버] 연결 불가 — 벡터 검색 비활성화 (Python 서버 확인 필요)");
         }
     }
 
@@ -107,28 +119,53 @@ public class VectorSearchService {
     @SuppressWarnings("unchecked")
     public List<RecommendedSongDto> findSimilar(
             String trackName, String artistName, String genreName, int limit) {
-        if (!vectorAvailable) return Collections.emptyList();
-        try {
-            String text = trackName + " " + artistName + " " + (genreName != null ? genreName : "");
-            List<Float> queryVector = embed(text);
+        return findSimilarInternal(trackName, artistName, genreName, limit, true);
+    }
 
-            // 쿼리 곡의 previewUrl 조회 (오디오 유사도 결합용)
-            String previewUrl = songRepository
+    @SuppressWarnings("unchecked")
+    private List<RecommendedSongDto> findSimilarInternal(
+            String trackName, String artistName, String genreName, int limit, boolean allowAutoIndexOnEmpty) {
+        if (!vectorAvailable) return Collections.emptyList();
+        long startedAt = System.nanoTime();
+        try {
+            Song seedSong = songRepository
                     .findByTrackNameAndArtistNameLike(trackName, artistName)
-                    .map(s -> s.getPreviewUrl() != null ? s.getPreviewUrl() : "")
-                    .orElse("");
+                    .orElse(null);
+            if (seedSong == null && trackName != null && !trackName.isBlank()) {
+                seedSong = songRepository.findByTrackNameLike(trackName).orElse(null);
+                if (seedSong != null) {
+                    logger.info("[VectorSearchService] 기준곡 fallback 매칭 성공: \"{}\" - {}",
+                            seedSong.getTrackName(), seedSong.getArtistName());
+                }
+            }
+            String seedGenre = seedSong != null && seedSong.getGenreName() != null
+                    ? seedSong.getGenreName() : genreName;
+            Long seedDurationMs = seedSong != null ? seedSong.getDurationMs() : null;
+
+            String text = buildSearchQuery(trackName, artistName, seedGenre, seedSong);
+            long embedStartedAt = System.nanoTime();
+            List<Float> queryVector = embed(text);
+            long embedElapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - embedStartedAt);
+
+            // 쿼리 곡의 songId/previewUrl 조회 (오디오 유사도 결합용)
+            String previewUrl = seedSong != null && seedSong.getPreviewUrl() != null
+                    ? seedSong.getPreviewUrl() : "";
 
             java.util.HashMap<String, Object> body = new java.util.HashMap<>();
+            int requestedLimit = Math.max(limit + 10, limit * 2);
             body.put("vector", queryVector);
-            body.put("limit", limit + 3);
+            body.put("limit", requestedLimit);
+            body.put("songId", seedSong != null ? seedSong.getId() : null);
             body.put("previewUrl", previewUrl);
 
+            long pythonStartedAt = System.nanoTime();
             Map<String, Object> response = pythonClient.post()
                     .uri("/vector/search")
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
                     .body(Map.class);
+            long pythonElapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - pythonStartedAt);
 
             if (response == null) return Collections.emptyList();
 
@@ -136,12 +173,15 @@ public class VectorSearchService {
                     (List<Map<String, Object>>) response.get("results");
             if (results == null) return Collections.emptyList();
 
-            return results.stream()
+            long mappingStartedAt = System.nanoTime();
+            List<VectorCandidate> allCandidates = results.stream()
                     .filter(r -> {
                         String name = (String) r.get("trackName");
-                        double score = r.get("score") != null
-                                ? ((Number) r.get("score")).doubleValue() : 0.0;
-                        return name != null && !name.equalsIgnoreCase(trackName) && score >= 0.40;
+                        String artist = (String) r.get("artistName");
+                        if (name == null) return false;
+                        boolean sameTrack = name.equalsIgnoreCase(trackName);
+                        boolean sameArtist = artistName != null && artist != null && artist.equalsIgnoreCase(artistName);
+                        return !(sameTrack && sameArtist);
                     })
                     .map(r -> {
                         Object idObj = r.get("id");
@@ -149,19 +189,88 @@ public class VectorSearchService {
                         Long songId = ((Number) idObj).longValue();
                         double score = r.get("score") != null
                                 ? ((Number) r.get("score")).doubleValue() : 0.0;
+                        double textScore = r.get("text_score") != null
+                                ? ((Number) r.get("text_score")).doubleValue() : score;
+                        Double audioScore = r.get("audio_score") != null
+                                ? ((Number) r.get("audio_score")).doubleValue() : null;
+                        Map<String, Object> audioDetail = r.get("audio_detail") instanceof Map<?, ?>
+                                ? (Map<String, Object>) r.get("audio_detail") : null;
 
                         return songRepository.findById(songId)
-                                .map(s -> RecommendedSongDto.builder()
-                                        .song(toDto(s))
-                                        .reason(vectorReason(score))
-                                        .source("vector")
-                                        .score(score)
+                                .map(s -> VectorCandidate.builder()
+                                        .song(s)
+                                        .baseScore(score)
+                                        .textScore(textScore)
+                                        .audioScore(audioScore)
+                                        .audioDetail(audioDetail)
+                                        .rerankedScore(rerankScore(
+                                                score,
+                                                textScore,
+                                                audioScore,
+                                                seedGenre,
+                                                s.getGenreName(),
+                                                seedDurationMs,
+                                                s.getDurationMs(),
+                                                s.getTrackName(),
+                                                s.getArtistName()))
                                         .build())
                                 .orElse(null);
                     })
                     .filter(Objects::nonNull)
+                    .filter(c -> !isLowQualityCandidate(c.song.getTrackName(), c.song.getArtistName()))
+                    .filter(c -> !isUnreasonableDuration(c.song.getDurationMs()))
+                    .sorted((a, b) -> Double.compare(b.rerankedScore, a.rerankedScore))
+                    .collect(Collectors.toList());
+
+            List<VectorCandidate> strict = allCandidates.stream()
+                    .filter(c -> c.rerankedScore >= MIN_SIMILARITY_SCORE_STRICT)
                     .limit(limit)
                     .collect(Collectors.toList());
+
+            List<VectorCandidate> selected = new ArrayList<>(strict);
+            if (selected.size() < Math.min(limit, MIN_STRICT_RESULTS)) {
+                Set<Long> selectedIds = selected.stream()
+                        .map(c -> c.song.getId())
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+                List<VectorCandidate> relaxedFill = allCandidates.stream()
+                        .filter(c -> c.rerankedScore >= MIN_SIMILARITY_SCORE_RELAXED)
+                        .filter(c -> !selectedIds.contains(c.song.getId()))
+                        .limit(limit - selected.size())
+                        .collect(Collectors.toList());
+                selected.addAll(relaxedFill);
+            }
+
+            if (selected.size() > limit) {
+                selected = selected.subList(0, limit);
+            }
+
+            List<RecommendedSongDto> recommendations = selected.stream()
+                    .map(c -> RecommendedSongDto.builder()
+                            .song(toDto(c.song))
+                            .reason(vectorReason(c.baseScore, c.textScore, c.audioScore, c.audioDetail))
+                            .source("vector")
+                            .score(c.rerankedScore)
+                            .build())
+                    .collect(Collectors.toList());
+
+            if (recommendations.isEmpty() && allowAutoIndexOnEmpty && seedSong != null) {
+                logger.info("[VectorSearchService] 결과 0건 - 기준곡 자동 인덱싱 후 재시도: \"{}\" - {}",
+                        seedSong.getTrackName(), seedSong.getArtistName());
+                try {
+                    indexSong(seedSong);
+                } catch (Exception reindexEx) {
+                    logger.warn("[VectorSearchService] 기준곡 자동 인덱싱 실패: {}", reindexEx.getMessage());
+                }
+                return findSimilarInternal(trackName, artistName, genreName, limit, false);
+            }
+
+            long mappingElapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - mappingStartedAt);
+            long totalElapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+
+            logger.info("[VectorSearchService] 호출 시간 - embed={}ms, python={}ms, mapping={}ms, total={}ms, 요청={}개, 후보={}곡, 결과={}곡",
+                    embedElapsedMs, pythonElapsedMs, mappingElapsedMs, totalElapsedMs,
+                    requestedLimit, allCandidates.size(), recommendations.size());
+            return recommendations;
 
         } catch (Exception e) {
             logger.warn("[VectorSearchService] 유사곡 검색 실패: {}", e.getMessage());
@@ -171,11 +280,194 @@ public class VectorSearchService {
 
     // ── private helpers ──────────────────────────────────
 
-    private String vectorReason(double score) {
-        if (score >= 0.57) return "거의 같은 감성의 곡이에요";       // 텍스트 0.95 × 0.6
-        if (score >= 0.51) return "분위기와 장르가 매우 비슷한 곡이에요"; // 텍스트 0.85 × 0.6
-        if (score >= 0.45) return "비슷한 스타일의 곡이에요";         // 텍스트 0.75 × 0.6
-        return "음악적 색깔이 유사한 곡이에요";
+    private String buildSearchQuery(String trackName, String artistName, String genreName, Song seedSong) {
+        StringBuilder query = new StringBuilder();
+        query.append(trackName != null ? trackName : "").append(" ")
+                .append(artistName != null ? artistName : "").append(" ")
+                .append(genreName != null ? genreName : "");
+        if (seedSong != null && seedSong.getReleaseDate() != null) {
+            String date = seedSong.getReleaseDate().toString();
+            if (date.length() >= 4) {
+                query.append(" ").append(date, 0, 4);
+            }
+        }
+        return query.toString().trim();
+    }
+
+    private boolean isLowQualityCandidate(String trackName, String artistName) {
+        String merged = ((trackName != null ? trackName : "") + " " + (artistName != null ? artistName : ""))
+                .toLowerCase(Locale.ROOT);
+        return LOW_QUALITY_KEYWORDS.stream().anyMatch(merged::contains);
+    }
+
+    private boolean isUnreasonableDuration(Long durationMs) {
+        if (durationMs == null || durationMs <= 0) {
+            return false;
+        }
+        return durationMs < MIN_REASONABLE_DURATION_MS || durationMs > MAX_REASONABLE_DURATION_MS;
+    }
+
+    private double rerankScore(
+            double baseScore,
+            double textScore,
+            Double audioScore,
+            String seedGenre,
+            String candidateGenre,
+            Long seedDurationMs,
+            Long candidateDurationMs,
+            String trackName,
+            String artistName) {
+        double score = baseScore;
+
+        if (audioScore != null && audioScore > 0) {
+            score += (audioScore - textScore) * 0.15;
+        }
+        if (isGenreCompatible(seedGenre, candidateGenre)) {
+            score += 0.03;
+        } else {
+            score -= 0.04;
+        }
+        if (isDurationCompatible(seedDurationMs, candidateDurationMs)) {
+            score += 0.02;
+        } else if (candidateDurationMs != null && candidateDurationMs > 0) {
+            score -= 0.03;
+        }
+        if (isLowQualityCandidate(trackName, artistName)) {
+            score -= 0.15;
+        }
+        return Math.max(0.0, Math.min(1.0, score));
+    }
+
+    private boolean isDurationCompatible(Long seedDurationMs, Long candidateDurationMs) {
+        if (seedDurationMs == null || candidateDurationMs == null || seedDurationMs <= 0 || candidateDurationMs <= 0) {
+            return true;
+        }
+        long diff = Math.abs(seedDurationMs - candidateDurationMs);
+        return diff <= 80_000L;
+    }
+
+    private boolean isGenreCompatible(String seedGenre, String candidateGenre) {
+        if (seedGenre == null || seedGenre.isBlank() || candidateGenre == null || candidateGenre.isBlank()) {
+            return true;
+        }
+        String s = normalizeGenre(seedGenre);
+        String c = normalizeGenre(candidateGenre);
+        if (s.equals(c) || s.contains(c) || c.contains(s)) {
+            return true;
+        }
+        return sameGenreFamily(s, c);
+    }
+
+    private String normalizeGenre(String genre) {
+        return genre.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]", "");
+    }
+
+    private boolean sameGenreFamily(String g1, String g2) {
+        return inFamily(g1, g2, "kpop", "pop", "dance")
+                || inFamily(g1, g2, "hiphop", "rap", "trap")
+                || inFamily(g1, g2, "rnb", "soul")
+                || inFamily(g1, g2, "ballad", "acoustic")
+                || inFamily(g1, g2, "rock", "metal", "punk")
+                || inFamily(g1, g2, "indie", "alternative")
+                || inFamily(g1, g2, "electronic", "edm", "house", "techno")
+                || inFamily(g1, g2, "jazz", "blues")
+                || inFamily(g1, g2, "classical", "orchestra", "instrumental");
+    }
+
+    private boolean inFamily(String g1, String g2, String... keys) {
+        boolean left = Arrays.stream(keys).anyMatch(g1::contains);
+        boolean right = Arrays.stream(keys).anyMatch(g2::contains);
+        return left && right;
+    }
+
+    private String vectorReason(double score, double textScore, Double audioScore, Map<String, Object> audioDetail) {
+        String summary;
+        if (score >= 0.57) summary = "지금 듣는 곡과 분위기가 정말 잘 이어져요.";
+        else if (score >= 0.51) summary = "분위기와 결이 비슷해서 함께 듣기 좋아요.";
+        else if (score >= 0.45) summary = "무드가 비슷해서 편하게 이어 들을 수 있어요.";
+        else summary = "취향이 크게 벗어나지 않아 가볍게 들어보기 좋은 곡이에요.";
+
+        if (audioScore != null && audioDetail != null && !audioDetail.isEmpty()) {
+            return String.format(Locale.ROOT,
+                    "%s %s %d%% 유사해요.",
+                    summary,
+                    audioReason(audioScore, audioDetail),
+                    toSimilarityPercent(score));
+        }
+
+        if (audioScore != null && audioScore > 0.0) {
+            return String.format(Locale.ROOT,
+                    "%s %s %d%% 유사해요.",
+                    summary,
+                    genericAudioReason(audioScore),
+                    toSimilarityPercent(score));
+        }
+
+        return String.format(Locale.ROOT,
+                "%s %s %d%% 유사해요.",
+                summary,
+                textReason(textScore),
+                toSimilarityPercent(score));
+    }
+
+    private int toSimilarityPercent(double score) {
+        return (int) Math.round(score * 100);
+    }
+
+    private String audioReason(double audioScore, Map<String, Object> audioDetail) {
+        Map<String, Double> featureScores = new LinkedHashMap<>();
+        featureScores.put("템포가 비슷하고", getDouble(audioDetail, "tempo_similarity"));
+        featureScores.put("에너지감이 잘 맞고", getDouble(audioDetail, "energy_similarity"));
+        featureScores.put("음색 결이 닮아 있고", getDouble(audioDetail, "timbre_similarity"));
+        featureScores.put("화성 느낌이 비슷하고", getDouble(audioDetail, "harmony_similarity"));
+        featureScores.put("밝기와 공간감이 가깝고", getDouble(audioDetail, "brightness_similarity"));
+        featureScores.put("리듬감이 잘 이어져서", getDouble(audioDetail, "rhythm_similarity"));
+
+        List<String> topReasons = featureScores.entrySet().stream()
+                .filter(e -> e.getValue() >= 0.55)
+                .sorted(Map.Entry.<String, Double>comparingByValue(Comparator.reverseOrder()))
+                .limit(2)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        if (topReasons.size() >= 2) {
+            return topReasons.get(0) + " " + topReasons.get(1) + " 자연스럽게 이어져요.";
+        }
+        if (topReasons.size() == 1) {
+            return topReasons.get(0) + " 전체적인 오디오 결도 잘 맞아요.";
+        }
+        if (audioScore >= 0.65) {
+            return "오디오 분위기 전반이 꽤 잘 맞는 편이에요.";
+        }
+        return "오디오 분위기에서 닮은 지점이 보여요.";
+    }
+
+    private String genericAudioReason(double audioScore) {
+        if (audioScore >= 0.80) {
+            return "오디오 분위기와 결이 아주 비슷해요.";
+        }
+        if (audioScore >= 0.65) {
+            return "오디오 느낌이 잘 이어지는 편이에요.";
+        }
+        if (audioScore >= 0.50) {
+            return "오디오 분위기에서 비슷한 지점이 있어요.";
+        }
+        return "오디오 기준으로도 어느 정도 닮은 흐름이 있어요.";
+    }
+
+    private String textReason(double textScore) {
+        if (textScore >= 0.75) {
+            return "곡 정보 기준으로도 꽤 가깝게 잡혔어요.";
+        }
+        if (textScore >= 0.55) {
+            return "곡명, 아티스트, 장르 흐름이 잘 맞는 편이에요.";
+        }
+        return "곡 정보 기준으로도 어느 정도 비슷한 흐름이 있어요.";
+    }
+
+    private double getDouble(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        return value instanceof Number ? ((Number) value).doubleValue() : 0.0;
     }
 
     private List<Float> embed(String text) {
@@ -201,5 +493,56 @@ public class VectorSearchService {
                 .durationMs(song.getDurationMs())
                 .genreName(song.getGenreName())
                 .build();
+    }
+
+    private static class VectorCandidate {
+        private Song song;
+        private double baseScore;
+        private double textScore;
+        private Double audioScore;
+        private Map<String, Object> audioDetail;
+        private double rerankedScore;
+
+        private static Builder builder() {
+            return new Builder();
+        }
+
+        private static class Builder {
+            private final VectorCandidate value = new VectorCandidate();
+
+            private Builder song(Song song) {
+                value.song = song;
+                return this;
+            }
+
+            private Builder baseScore(double baseScore) {
+                value.baseScore = baseScore;
+                return this;
+            }
+
+            private Builder textScore(double textScore) {
+                value.textScore = textScore;
+                return this;
+            }
+
+            private Builder audioScore(Double audioScore) {
+                value.audioScore = audioScore;
+                return this;
+            }
+
+            private Builder audioDetail(Map<String, Object> audioDetail) {
+                value.audioDetail = audioDetail;
+                return this;
+            }
+
+            private Builder rerankedScore(double rerankedScore) {
+                value.rerankedScore = rerankedScore;
+                return this;
+            }
+
+            private VectorCandidate build() {
+                return value;
+            }
+        }
     }
 }

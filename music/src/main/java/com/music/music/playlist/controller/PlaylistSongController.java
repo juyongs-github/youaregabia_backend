@@ -29,14 +29,14 @@ public class PlaylistSongController {
 
     // 일반 플레이리스트 곡 조회
     @GetMapping("/{playlistId}/songs")
-    public ResponseEntity<List<SongDTO>> getPlaylistSongs(@PathVariable Long playlistId) {
+    public ResponseEntity<List<SongDTO>> getPlaylistSongs(@PathVariable("playlistId") Long playlistId) {
         return ResponseEntity.ok(playlistSongService.getPlaylistSongs(playlistId));
     }
 
     // 공동 플레이리스트 곡 조회 (투표수 + 등록자 포함)
     @GetMapping("/{playlistId}/collabo/songs")
     public ResponseEntity<List<CollaboSongDto>> getCollaboSongs(
-            @PathVariable Long playlistId,
+            @PathVariable("playlistId") Long playlistId,
             @AuthenticationPrincipal String email) {
         return ResponseEntity.ok(playlistSongService.getCollaboSongs(playlistId, email));
     }
@@ -44,8 +44,8 @@ public class PlaylistSongController {
     // 작성자 직접 추가
     @PostMapping("/{playlistId}/songs/{songId}")
     public ResponseEntity<Void> addSongDirectly(
-            @PathVariable Long playlistId,
-            @PathVariable Long songId,
+            @PathVariable("playlistId") Long playlistId,
+            @PathVariable("songId") Long songId,
             @AuthenticationPrincipal String email) {
         try {
             if (email == null) {
@@ -63,7 +63,7 @@ public class PlaylistSongController {
     // 곡 삭제 (작성자 or 등록자)
     @DeleteMapping("/songs/{playlistSongId}")
     public ResponseEntity<Void> removeSong(
-            @PathVariable Long playlistSongId,
+            @PathVariable("playlistSongId") Long playlistSongId,
             @AuthenticationPrincipal String email) {
         try {
             playlistSongService.removeSong(playlistSongId, email);
@@ -78,8 +78,8 @@ public class PlaylistSongController {
     // 투표 (최대 3개)
     @PostMapping("/{playlistId}/songs/{playlistSongId}/vote")
     public ResponseEntity<String> vote(
-            @PathVariable Long playlistId,
-            @PathVariable Long playlistSongId,
+            @PathVariable("playlistId") Long playlistId,
+            @PathVariable("playlistSongId") Long playlistSongId,
             @AuthenticationPrincipal String email) {
         try {
             playlistSongService.vote(playlistSongId, email);
@@ -92,9 +92,9 @@ public class PlaylistSongController {
     // reason 수정 (등록자만)
     @PatchMapping("/songs/{playlistSongId}/reason")
     public ResponseEntity<Void> updateReason(
-            @PathVariable Long playlistSongId,
+            @PathVariable("playlistSongId") Long playlistSongId,
             @AuthenticationPrincipal String email,
-            @RequestParam String reason) {
+            @RequestParam("reason") String reason) {
         try {
             playlistSongService.updateReason(playlistSongId, email, reason);
             return ResponseEntity.ok().build();
@@ -108,8 +108,8 @@ public class PlaylistSongController {
     // 투표 취소
     @DeleteMapping("/{playlistId}/songs/{playlistSongId}/vote")
     public ResponseEntity<Void> unvote(
-            @PathVariable Long playlistId,
-            @PathVariable Long playlistSongId,
+            @PathVariable("playlistId") Long playlistId,
+            @PathVariable("playlistSongId") Long playlistSongId,
             @AuthenticationPrincipal String email) {
         try {
             playlistSongService.unvote(playlistSongId, email);

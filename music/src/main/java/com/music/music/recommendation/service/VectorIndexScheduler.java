@@ -28,7 +28,7 @@ public class VectorIndexScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(VectorIndexScheduler.class);
 
-    @Value("${ytmusic.service.url}")
+    @Value("${vector.service.url}")
     private String pythonServiceUrl;
 
     private final SongRepository songRepository;

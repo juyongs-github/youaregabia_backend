@@ -1,8 +1,14 @@
 package com.music.music.review.service;
 
+import com.music.music.playlist.dto.SongDTO;
+import com.music.music.playlist.entity.PlaylistSong;
+import com.music.music.playlist.entity.Song;
+import com.music.music.playlist.repository.PlaylistSongRepository;
 import com.music.music.review.dto.ReviewDto;
 import com.music.music.review.entity.Review;
+import com.music.music.review.entity.ReviewSong;
 import com.music.music.review.repository.ReviewRepository;
+import com.music.music.review.repository.ReviewSongRepository;
 import com.music.music.playlist.entity.Playlist;
 import com.music.music.playlist.repository.PlaylistRepository;
 import com.music.music.user.entity.User;
@@ -17,11 +23,18 @@ import java.util.List;
 @Service
 @Transactional(readOnly = true)
 public class ReviewService {
+
     @Autowired
     private ReviewRepository reviewRepository;
 
     @Autowired
+    private ReviewSongRepository reviewSongRepository;
+
+    @Autowired
     private PlaylistRepository playlistRepository;
+
+    @Autowired
+    private PlaylistSongRepository playlistSongRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -42,6 +55,19 @@ public class ReviewService {
                 .build();
     }
 
+    private SongDTO songToDto(Song song) {
+        return SongDTO.builder()
+                .id(song.getId())
+                .trackName(song.getTrackName())
+                .artistName(song.getArtistName())
+                .previewUrl(song.getPreviewUrl())
+                .imgUrl(song.getImgUrl())
+                .releaseDate(song.getReleaseDate())
+                .durationMs(song.getDurationMs())
+                .genreName(song.getGenreName())
+                .build();
+    }
+
     @Transactional
     public ReviewDto createReview(Long playlistId, String userEmail, String content, Integer rating) {
         Playlist playlist = playlistRepository.findById(playlistId)
@@ -58,6 +84,16 @@ public class ReviewService {
                 .build();
 
         Review savedReview = reviewRepository.save(review);
+
+        // 리뷰 작성 시점의 플레이리스트 곡 스냅샷 저장
+        List<PlaylistSong> playlistSongs = playlistSongRepository.findByPlaylistIdWithSong(playlistId);
+        List<ReviewSong> reviewSongs = playlistSongs.stream()
+                .map(ps -> ReviewSong.builder()
+                        .review(savedReview)
+                        .song(ps.getSong())
+                        .build())
+                .toList();
+        reviewSongRepository.saveAll(reviewSongs);
 
         return toDto(savedReview);
     }
@@ -83,6 +119,12 @@ public class ReviewService {
                 .toList();
     }
 
+    public List<SongDTO> getReviewSongs(Long reviewId) {
+        return reviewSongRepository.findByReviewIdWithSong(reviewId).stream()
+                .map(rs -> songToDto(rs.getSong()))
+                .toList();
+    }
+
     @Transactional
     public ReviewDto updateReview(Long reviewId, String content, Integer rating) {
         Review review = reviewRepository.findById(reviewId)
@@ -99,6 +141,7 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
 
+        reviewSongRepository.deleteByReviewId(reviewId);
         reviewRepository.delete(review);
     }
 }

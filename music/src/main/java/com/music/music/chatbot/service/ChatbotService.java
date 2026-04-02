@@ -8,6 +8,7 @@ import com.music.music.chatbot.entity.ChatMessage;
 import com.music.music.chatbot.entity.ChatSession;
 import com.music.music.chatbot.repository.ChatMessageRepository;
 import com.music.music.chatbot.repository.ChatSessionRepository;
+import com.music.music.recommendation.service.RecommendationOrchestrator;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class ChatbotService {
     private final OpenAiService openAiService;
     private final ItunesService itunesService;
     private final ChartService chartService;
+    private final RecommendationOrchestrator recommendationOrchestrator;
     private final UserRepository userRepository;
     private final ChatSessionRepository chatSessionRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -53,6 +55,12 @@ public class ChatbotService {
     private static final List<String> GUIDE_KEYWORDS = List.of(
             "어떻게", "방법", "사용법", "기능", "도움", "가이드", "알려줘", "뭐야", "무엇",
             "설명", "안내", "모르", "도와줘", "어디서", "어디에"
+    );
+
+    // 유사곡 요청 키워드: 특정 곡과 비슷한 음악을 원할 때 → Orchestrator 결과를 컨텍스트로 주입
+    private static final List<String> SIMILAR_KEYWORDS = List.of(
+            "비슷한", "유사한", "같은 느낌", "이런 스타일", "이런 분위기", "비슷한 노래",
+            "비슷한 곡", "더 추천", "같은 장르", "이 아티스트처럼", "이런 곡"
     );
 
     // 곡 정보 요청 키워드: 추천이 아닌 특정 곡의 정보(발매일·가사·작곡 등)를 묻는 경우
@@ -128,12 +136,25 @@ public class ChatbotService {
         boolean isFollowUp = isSongInfoQuery(message);
 
         // 5-1. 차트 컨텍스트 — 항상 주입 (캐시 데이터라 비용 없음, 후속 메시지에도 최신 차트 유지)
-        // AI 시스템 프롬프트에서 최신/인기 요청 시에만 활용하도록 지시되어 있음
         List<String> chartContext = chartService.getChart();
+
+        // 5-2. 유사곡 컨텍스트 — "비슷한 곡" 요청 시 Orchestrator 결과를 추가 컨텍스트로 주입
+        String similarSongsContext = null;
+        if (isSimilarSongQuery(message)) {
+            String[] seedSong = extractSeedSong(history);
+            if (seedSong != null) {
+                var related = recommendationOrchestrator.recommend(seedSong[0], seedSong[1], null, 8);
+                if (!related.isEmpty()) {
+                    similarSongsContext = recommendationOrchestrator.toPromptContext(related);
+                    logger.info("[ChatbotService] 유사곡 컨텍스트 주입 - 기준곡: {} / {}곡",
+                            seedSong[0], related.size());
+                }
+            }
+        }
 
         // 6. AI 호출 (후속 질문이면 중복 방지 목록 전달 안 함 — AI가 새 추천으로 오해 방지)
         List<String> titlesToPass = isFollowUp ? null : previousSongTitles;
-        String aiResponse = openAiService.getResponse(message, history, age, titlesToPass, chartContext);
+        String aiResponse = openAiService.getResponse(message, history, age, titlesToPass, chartContext, similarSongsContext);
 
         // 6-1. iTunes로 추천 곡 검증 — 후속 질문이 아니고 40% 미만이면 1회 재시도
         if (!isFollowUp) {
@@ -144,7 +165,7 @@ public class ChatbotService {
                     logger.info("[ChatbotService] iTunes 검증률 낮음({}%), AI 재호출", String.format("%.0f", rate * 100));
                     List<String> enrichedTitles = new ArrayList<>(previousSongTitles);
                     enrichedTitles.addAll(itunesService.extractSongTitles(aiResponse));
-                    aiResponse = openAiService.getResponse(message, history, age, enrichedTitles, chartContext);
+                    aiResponse = openAiService.getResponse(message, history, age, enrichedTitles, chartContext, similarSongsContext);
                 }
             }
         }
@@ -269,5 +290,27 @@ public class ChatbotService {
     private boolean isSongInfoQuery(String message) {
         String lower = message.toLowerCase();
         return SONG_INFO_KEYWORDS.stream().anyMatch(lower::contains);
+    }
+
+    private boolean isSimilarSongQuery(String message) {
+        String lower = message.toLowerCase();
+        return SIMILAR_KEYWORDS.stream().anyMatch(lower::contains);
+    }
+
+    /**
+     * 최근 히스토리에서 마지막으로 AI가 추천한 곡의 [제목, 아티스트]를 추출.
+     * ItunesService로 파싱한 "곡명" - 아티스트 포맷 활용.
+     */
+    private String[] extractSeedSong(List<ChatMessage> history) {
+        if (history == null) return null;
+        for (int i = history.size() - 1; i >= 0; i--) {
+            ChatMessage msg = history.get(i);
+            if (!"assistant".equals(msg.getRole())) continue;
+            List<String[]> songs = itunesService.extractSongs(msg.getContent());
+            if (!songs.isEmpty()) {
+                return songs.get(0); // [제목, 아티스트]
+            }
+        }
+        return null;
     }
 }

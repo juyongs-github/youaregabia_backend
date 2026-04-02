@@ -24,9 +24,13 @@ import com.music.music.api.dto.TrackDTO;
 import com.music.music.playlist.dto.SongDTO;
 import com.music.music.playlist.entity.Song;
 import com.music.music.playlist.repository.SongRepository;
+import com.music.music.recommendation.service.VectorSearchService;
 
 @Service
 public class MusicApiService {
+
+    @Autowired
+    private SongIndexingService songIndexingService;
     private final Logger logger = LoggerFactory.getLogger(MusicApiService.class);
     private final Gson gson = new Gson();
 
@@ -46,6 +50,9 @@ public class MusicApiService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private VectorSearchService vectorSearchService;
 
     // iTunes 검색 전용
     private ItunesSearchResponse getItunesTrackInfo(String term, String attribute, int limit) {
@@ -246,8 +253,9 @@ public class MusicApiService {
                     SongDTO songDto = upgradeImageResolution(itunesSong);
 
                     Song song = modelMapper.map(songDto, Song.class);
-                    songRepository.findById(songDto.getId())
+                    Song saved = songRepository.findById(songDto.getId())
                             .orElseGet(() -> songRepository.save(song));
+                    vectorSearchService.indexSong(saved);
 
                     resultList.add(songDto);
                 } catch (Exception e) {
@@ -291,8 +299,9 @@ public class MusicApiService {
                             SongDTO songDto = upgradeImageResolution(itunesSong);
 
                             Song song = modelMapper.map(songDto, Song.class);
-                            songRepository.findById(songDto.getId())
+                            Song saved = songRepository.findById(songDto.getId())
                                     .orElseGet(() -> songRepository.save(song));
+                            vectorSearchService.indexSong(saved);
 
                             resultList.add(songDto);
                         } catch (Exception e) {
@@ -334,14 +343,14 @@ public class MusicApiService {
                 .map(Song::getId)
                 .collect(Collectors.toList());
 
-        // 없는 곡만 저장
+        // 없는 곡만 백그라운드에서 저장 + 벡터 인덱싱 (응답과 분리)
         List<Song> newSongs = resultList.stream()
                 .filter(dto -> !existingIds.contains(dto.getId()))
                 .map(dto -> modelMapper.map(dto, Song.class))
                 .collect(Collectors.toList());
 
         if (!newSongs.isEmpty()) {
-            songRepository.saveAll(newSongs); // 한 번에 저장
+            songIndexingService.saveAndIndex(newSongs); // 비동기 — 즉시 반환
         }
 
         return resultList;

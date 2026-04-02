@@ -1,5 +1,6 @@
 package com.music.music.review.controller;
 
+import com.music.music.playlist.dto.SongDTO;
 import com.music.music.review.dto.ReviewDto;
 import com.music.music.review.dto.ReviewRequestDto;
 import com.music.music.review.service.ReviewService;
@@ -24,20 +25,22 @@ public class ReviewController {
 
     @GetMapping("/all")
     public ResponseEntity<List<ReviewDto>> getAllReviews() {
-        List<ReviewDto> reviews = reviewService.getAllReviews();
-        return ResponseEntity.ok(reviews);
+        return ResponseEntity.ok(reviewService.getAllReviews());
     }
 
     @GetMapping("/playlist/{playlistId}")
     public ResponseEntity<List<ReviewDto>> getReviewsByPlaylist(@PathVariable(name = "playlistId") Long playlistId) {
-        List<ReviewDto> reviews = reviewService.getReviewsByPlaylist(playlistId);
-        return ResponseEntity.ok(reviews);
+        return ResponseEntity.ok(reviewService.getReviewsByPlaylist(playlistId));
     }
 
     @GetMapping("/user/{email}")
     public ResponseEntity<List<ReviewDto>> getReviewsByUser(@PathVariable(name = "email") String email) {
-        List<ReviewDto> reviews = reviewService.getReviewsByUser(email);
-        return ResponseEntity.ok(reviews);
+        return ResponseEntity.ok(reviewService.getReviewsByUser(email));
+    }
+
+    @GetMapping("/{reviewId}/songs")
+    public ResponseEntity<List<SongDTO>> getReviewSongs(@PathVariable Long reviewId) {
+        return ResponseEntity.ok(reviewService.getReviewSongs(reviewId));
     }
 
     @PutMapping("/{reviewId}")
@@ -48,8 +51,7 @@ public class ReviewController {
         if (request.getRating() != null) {
             rating = request.getRating();
         }
-        ReviewDto review = reviewService.updateReview(reviewId, request.getContent(), rating);
-        return ResponseEntity.ok(review);
+        return ResponseEntity.ok(reviewService.updateReview(reviewId, request.getContent(), rating));
     }
 
     @DeleteMapping("/{reviewId}")

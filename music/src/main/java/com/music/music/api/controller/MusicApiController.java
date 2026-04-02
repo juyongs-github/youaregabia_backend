@@ -18,6 +18,9 @@ import com.music.music.api.service.MusicApiService;
 import com.music.music.playlist.dto.SongDTO;
 import com.music.music.playlist.entity.Song;
 import com.music.music.playlist.repository.SongRepository;
+import com.music.music.recommendation.dto.RecommendedSongDto;
+import com.music.music.recommendation.service.RecommendationOrchestrator;
+import com.music.music.recommendation.service.VectorSearchService;
 
 @RestController
 public class MusicApiController {
@@ -27,7 +30,13 @@ public class MusicApiController {
   MusicApiService musicApiService;
 
   @Autowired
+  RecommendationOrchestrator recommendationOrchestrator;
+
+  @Autowired
   SongRepository songRepository;
+
+  @Autowired
+  VectorSearchService vectorSearchService;
 
   @GetMapping("/api/init")
   public ResponseEntity<String> saveInitialSongInfo() {
@@ -42,10 +51,24 @@ public class MusicApiController {
   }
 
   @GetMapping("/api/recommend")
-  public List<SongDTO> getRecommendSongList(
+  public List<RecommendedSongDto> getRecommendSongList(
       @RequestParam("trackName") String trackName,
-      @RequestParam("artistName") String artistName) {
-    return musicApiService.getRecommendSongList(trackName, artistName);
+      @RequestParam("artistName") String artistName,
+      @RequestParam(value = "genre", required = false) String genre) {
+    return recommendationOrchestrator.recommend(trackName, artistName, genre, 15);
+  }
+
+  @GetMapping("/api/vector/index-all")
+  public ResponseEntity<String> indexAllSongs() {
+    try {
+      List<Song> all = songRepository.findAll();
+      if (all.isEmpty()) return ResponseEntity.ok("인덱싱할 곡이 없습니다.");
+      vectorSearchService.indexSongs(all);
+      return ResponseEntity.ok("FAISS 인덱싱 완료: " + all.size() + "곡");
+    } catch (Exception e) {
+      logger.error("[indexAllSongs] 실패: {}", e.getMessage());
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("인덱싱 실패: " + e.getMessage());
+    }
   }
 
   @GetMapping("/api/search")

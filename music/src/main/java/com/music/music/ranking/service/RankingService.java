@@ -74,30 +74,34 @@ public class RankingService {
 
     // 3. 일주일간 인기 곡 랭킹
     public List<SongRankingDto> getTopSharedSongs() {
-        LocalDateTime oneWeekAgo = LocalDateTime.now().minusWeeks(1);
+    LocalDateTime oneWeekAgo = LocalDateTime.now().minusWeeks(1);
 
-        String jpql = """
-            SELECT new com.music.music.ranking.dto.SongRankingDto(
-                s.id,
-                s.trackName,
-                s.artistName,
-                s.imgUrl,
-                COUNT(bs.id)
-            )
-            FROM BoardSong bs
-            JOIN bs.song s
-            JOIN bs.board b
-            WHERE b.boardType = com.music.music.board.entity.BoardType.PLAYLIST_SHARE
-              AND b.deleted = false
-              AND b.createdAt >= :oneWeekAgo
-            GROUP BY s.id, s.trackName, s.artistName, s.imgUrl
-            ORDER BY COUNT(bs.id) DESC
-            """;
+    String jpql = """
+        SELECT new com.music.music.ranking.dto.SongRankingDto(
+            s.id,
+            s.trackName,
+            s.artistName,
+            s.imgUrl,
+            COUNT(bs.id),
+            s.previewUrl,
+            s.genreName,
+            s.durationMs,
+            s.releaseDate
+        )
+        FROM BoardSong bs
+        JOIN bs.song s
+        JOIN bs.board b
+        WHERE b.boardType = com.music.music.board.entity.BoardType.PLAYLIST_SHARE
+          AND b.deleted = false
+          AND b.createdAt >= :oneWeekAgo
+        GROUP BY s.id, s.trackName, s.artistName, s.imgUrl, s.previewUrl, s.genreName, s.durationMs, s.releaseDate
+        ORDER BY COUNT(bs.id) DESC
+        """;
 
-        return em.createQuery(jpql, SongRankingDto.class)
-                .setParameter("oneWeekAgo", oneWeekAgo)
-                .setMaxResults(TOP_N)
-                .getResultList();
+    return em.createQuery(jpql, SongRankingDto.class)
+            .setParameter("oneWeekAgo", oneWeekAgo)
+            .setMaxResults(TOP_N)
+            .getResultList();
     }
 
     // 4. 일주일간 인기 가수 랭킹

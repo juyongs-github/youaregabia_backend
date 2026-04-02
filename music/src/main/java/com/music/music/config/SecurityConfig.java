@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/inquiry").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/inquiry/my").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/inquiry").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/inquiry/*/status").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/notifications/**").authenticated()
                         .requestMatchers("/api/playlist/**").authenticated()

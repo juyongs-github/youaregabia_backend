@@ -78,6 +78,12 @@ public class ReplyService {
         reply.delete();
     }
 
+    public void adminDeleteReply(Long replyId) {
+        Reply reply = replyRepository.findById(replyId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+        reply.delete();
+    }
+
     @Transactional
     public void updateReply(Long replyId, String email, ReplyCreateDto dto) {
 

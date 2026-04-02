@@ -2,6 +2,7 @@ package com.music.music.chatbot.controller;
 
 import com.music.music.chatbot.dto.InquiryRequest;
 import com.music.music.chatbot.dto.InquiryResponseDto;
+import com.music.music.chatbot.entity.InquiryStatus;
 import com.music.music.chatbot.service.InquiryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/inquiry")
@@ -37,5 +39,14 @@ public class InquiryController {
     @GetMapping
     public ResponseEntity<List<InquiryResponseDto>> getAllInquiries() {
         return ResponseEntity.ok(inquiryService.getAllInquiries());
+    }
+
+    // 문의 상태 변경 (관리자)
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> updateStatus(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        inquiryService.updateStatus(id, InquiryStatus.valueOf(body.get("status")));
+        return ResponseEntity.ok().build();
     }
 }

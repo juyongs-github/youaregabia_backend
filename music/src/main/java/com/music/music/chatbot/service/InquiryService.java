@@ -3,6 +3,7 @@ package com.music.music.chatbot.service;
 import com.music.music.chatbot.dto.InquiryRequest;
 import com.music.music.chatbot.dto.InquiryResponseDto;
 import com.music.music.chatbot.entity.Inquiry;
+import com.music.music.chatbot.entity.InquiryStatus;
 import com.music.music.chatbot.repository.InquiryRepository;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
@@ -142,5 +143,13 @@ public class InquiryService {
                 .stream()
                 .map(InquiryResponseDto::new)
                 .collect(Collectors.toList());
+    }
+
+    // 문의 상태 변경 (관리자)
+    @Transactional
+    public void updateStatus(Long id, InquiryStatus status) {
+        Inquiry inquiry = inquiryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("문의를 찾을 수 없습니다."));
+        inquiry.updateStatus(status);
     }
 }

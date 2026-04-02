@@ -45,4 +45,8 @@ public class Inquiry {
     public void markEmailSent() {
         this.emailSent = true;
     }
+
+    public void updateStatus(InquiryStatus status) {
+        this.status = status;
+    }
 }

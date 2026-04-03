@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.music.music.playlist.entity.Playlist;
 import com.music.music.playlist.entity.PlaylistSong;
+import com.music.music.playlist.repository.PlaylistImportRepository;
 import com.music.music.playlist.repository.PlaylistLikeRepository;
 import com.music.music.playlist.repository.PlaylistRepository;
 import com.music.music.playlist.repository.PlaylistSongRepository;
@@ -33,6 +34,7 @@ public class PlaylistFinalizeScheduler {
     private final PlaylistSongRepository playlistSongRepository;
     private final PlaylistSongVoteRepository voteRepository;
     private final PlaylistLikeRepository playlistLikeRepository;
+    private final PlaylistImportRepository playlistImportRepository;
 
     // 1분마다 마감 여부 확인
     @Scheduled(fixedDelay = 60_000)
@@ -57,6 +59,7 @@ public class PlaylistFinalizeScheduler {
         if (songs.size() < MIN_SONGS_REQUIRED) {
             voteRepository.deleteByPlaylistId(playlistId);
             playlistLikeRepository.deleteByPlaylistId(playlistId);
+            playlistImportRepository.deleteByPlaylistId(playlistId);
             playlistRepository.deleteById(playlistId);
             log.info("수록곡 부족으로 플레이리스트 자동 삭제: playlistId={}, songCount={}", playlistId, songs.size());
             return;

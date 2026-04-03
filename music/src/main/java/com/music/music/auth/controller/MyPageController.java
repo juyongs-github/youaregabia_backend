@@ -41,7 +41,7 @@ public class MyPageController {
     List<MyReplyDto> result = replyRepository.findByUser_EmailOrderByCreatedAtDesc(email)
         .stream()
         .map(r -> new MyReplyDto(r.getReplyId(), r.getBoard().getBoardId(),
-            r.getBoard().getTitle(), r.getContent(), r.getLikeCount(), r.getCreatedAt()))
+            r.getBoard().getTitle(), r.getBoard().getBoardType().name(), r.getContent(), r.getLikeCount(), r.getCreatedAt()))
         .toList();
     return ResponseEntity.ok(result);
   }
@@ -59,6 +59,7 @@ public class MyPageController {
       Long replyId,
       Long boardId,
       String boardTitle,
+      String boardType,
       String content,
       int likeCount,
       LocalDateTime createdAt) {}

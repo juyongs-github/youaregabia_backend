@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -207,6 +208,27 @@ public class AdminController {
       @RequestBody Map<String, String> body) {
     inquiryService.updateStatus(id, InquiryStatus.valueOf(body.get("status")));
     return ResponseEntity.ok().build();
+  }
+
+  // 답변 등록/수정
+  @PutMapping("/inquiries/{id}/answer")
+  public ResponseEntity<InquiryResponseDto> saveAnswer(
+      @PathVariable Long id,
+      @RequestBody Map<String, String> body) {
+    return ResponseEntity.ok(inquiryService.saveAnswer(id, body.get("answer")));
+  }
+
+  // 답변 삭제
+  @DeleteMapping("/inquiries/{id}/answer")
+  public ResponseEntity<InquiryResponseDto> deleteAnswer(@PathVariable Long id) {
+    return ResponseEntity.ok(inquiryService.deleteAnswer(id));
+  }
+
+  // 문의 삭제
+  @DeleteMapping("/inquiries/{id}")
+  public ResponseEntity<Void> deleteInquiry(@PathVariable Long id) {
+    inquiryService.deleteInquiry(id);
+    return ResponseEntity.noContent().build();
   }
 
   public record AdminPointLogDto(

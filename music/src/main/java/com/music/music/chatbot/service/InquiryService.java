@@ -66,12 +66,12 @@ public class InquiryService {
             user = userRepository.findByEmail(userEmail).orElse(null);
         }
 
-        // 연락처 결정: 로그인 사용자는 계정 이메일, 비로그인은 요청에 포함된 email/phone 사용
-        String notifyEmail = (userEmail != null) ? userEmail : request.getEmail();
+        // 연락처: 챗봇에서 사용자가 직접 입력한 값만 사용 (로그인 여부 무관)
+        String notifyEmail = request.getEmail();
         String notifyPhone = request.getPhone();
 
-        // 비로그인 사용자는 이메일 또는 전화번호 중 하나 필수
-        if (userEmail == null && isBlank(notifyEmail) && isBlank(notifyPhone)) {
+        // 이메일 또는 전화번호 중 하나 필수
+        if (isBlank(notifyEmail) && isBlank(notifyPhone)) {
             throw new IllegalArgumentException("이메일 또는 휴대폰 번호를 입력해주세요.");
         }
         if (!isBlank(notifyEmail) && !EMAIL_PATTERN.matcher(notifyEmail).matches()) {
@@ -185,6 +185,36 @@ public class InquiryService {
         smsService.sendOne(new SingleMessageSendingRequest(message));
     }
 
+    // 사용자에게 답변 완료 알림 이메일
+    private void sendAnswerNotificationEmail(Inquiry inq) {
+        String body = "[GAP Music] 문의하신 내용에 답변이 등록되었습니다.\n\n"
+                + "유형: " + inq.getType() + "\n"
+                + "문의 내용:\n" + inq.getContent() + "\n\n"
+                + "─────────────────────\n"
+                + "관리자 답변:\n" + inq.getAnswer() + "\n"
+                + "─────────────────────\n\n"
+                + "추가 문의사항이 있으시면 다시 문의해 주세요.";
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(inq.getEmail());
+        message.setSubject("[GAP Music] 문의 답변이 등록되었습니다.");
+        message.setText(body);
+        mailSender.send(message);
+    }
+
+    // 사용자에게 답변 완료 알림 SMS
+    private void sendAnswerNotificationSms(Inquiry inq) {
+        String preview = inq.getAnswer().length() > 40
+                ? inq.getAnswer().substring(0, 40) + "…" : inq.getAnswer();
+        Message message = new Message();
+        message.setFrom(smsFromNumber);
+        message.setTo(inq.getPhone());
+        message.setText("[GAP Music] 문의 답변이 등록되었습니다.\n"
+                + "유형: " + inq.getType() + "\n"
+                + "답변: " + preview);
+        smsService.sendOne(new SingleMessageSendingRequest(message));
+    }
+
     private static boolean isBlank(String value) {
         return value == null || value.isBlank();
     }
@@ -242,5 +272,55 @@ public class InquiryService {
         Inquiry inquiry = inquiryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("문의를 찾을 수 없습니다."));
         inquiry.updateStatus(status);
+    }
+
+    // 답변 등록/수정 (관리자)
+    @Transactional
+    public InquiryResponseDto saveAnswer(Long id, String answer) {
+        if (answer == null || answer.isBlank()) {
+            throw new IllegalArgumentException("답변 내용을 입력해주세요.");
+        }
+        Inquiry inquiry = inquiryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("문의를 찾을 수 없습니다."));
+        inquiry.saveAnswer(answer.trim());
+
+        // 이메일 알림
+        if (!isBlank(inquiry.getEmail()) && mailSender != null) {
+            try {
+                sendAnswerNotificationEmail(inquiry);
+                logger.info("[InquiryService] 답변 알림 이메일 발송 - {}", inquiry.getEmail());
+            } catch (Exception e) {
+                logger.warn("[InquiryService] 답변 알림 이메일 발송 실패 - {}: {}", inquiry.getEmail(), e.getMessage());
+            }
+        }
+
+        // SMS 알림
+        if (!isBlank(inquiry.getPhone())) {
+            try {
+                sendAnswerNotificationSms(inquiry);
+                logger.info("[InquiryService] 답변 알림 SMS 발송 - {}", inquiry.getPhone());
+            } catch (Exception e) {
+                logger.warn("[InquiryService] 답변 알림 SMS 발송 실패 - {}: {}", inquiry.getPhone(), e.getMessage());
+            }
+        }
+
+        return new InquiryResponseDto(inquiry);
+    }
+
+    // 답변 삭제 (관리자)
+    @Transactional
+    public InquiryResponseDto deleteAnswer(Long id) {
+        Inquiry inquiry = inquiryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("문의를 찾을 수 없습니다."));
+        inquiry.deleteAnswer();
+        return new InquiryResponseDto(inquiry);
+    }
+
+    // 문의 삭제 (관리자)
+    @Transactional
+    public void deleteInquiry(Long id) {
+        Inquiry inquiry = inquiryRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("문의를 찾을 수 없습니다."));
+        inquiryRepository.delete(inquiry);
     }
 }

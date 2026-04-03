@@ -38,6 +38,11 @@ public class Inquiry {
     @Builder.Default
     private InquiryStatus status = InquiryStatus.PENDING;
 
+    @Column(columnDefinition = "TEXT")
+    private String answer;
+
+    private LocalDateTime answeredAt;
+
     @Builder.Default
     private boolean emailSent = false;
 
@@ -50,5 +55,17 @@ public class Inquiry {
 
     public void updateStatus(InquiryStatus status) {
         this.status = status;
+    }
+
+    public void saveAnswer(String answer) {
+        this.answer = answer;
+        this.answeredAt = LocalDateTime.now();
+        this.status = InquiryStatus.ANSWERED;
+    }
+
+    public void deleteAnswer() {
+        this.answer = null;
+        this.answeredAt = null;
+        this.status = InquiryStatus.PENDING;
     }
 }

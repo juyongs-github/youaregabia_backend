@@ -29,14 +29,16 @@ public class ReplyResponseDto {
     private LocalDateTime createdAt;
     private boolean deleted;
     private String writerEmail;
+    private String imgUrl;
     private List<ReplyResponseDto> children = new ArrayList<>();
 
     // ✅ JPQL 전용 생성자
-    public ReplyResponseDto(
+   public ReplyResponseDto(
     Long replyId,
     String content,
     String writer,
     String writerEmail,
+    String imgUrl,
     Long likeCount,
     Long likedByMe,
     LocalDateTime createdAt,
@@ -45,11 +47,12 @@ public class ReplyResponseDto {
     this.replyId = replyId;
     this.content = content;
     this.writer = writer;
+    this.writerEmail = writerEmail;
+    this.imgUrl = imgUrl;
     this.likeCount = likeCount != null ? likeCount.intValue() : 0;
     this.likedByMe = likedByMe != null && likedByMe > 0;
     this.createdAt = createdAt;
     this.deleted = deleted;
-    this.writerEmail = writerEmail;
 }
 
 

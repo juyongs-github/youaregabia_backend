@@ -38,7 +38,8 @@ public class RankingService {
             )
             FROM users u
             JOIN UserPoint up ON up.user = u
-            WHERE u.state = 1
+            WHERE u.state = 1 
+            AND u.role != com.music.music.user.entity.Role.ADMIN
             ORDER BY (
                 (SELECT COALESCE(SUM(b.likeCount), 0) FROM Board b WHERE b.user = u AND b.deleted = false)
                 +
@@ -63,7 +64,8 @@ public class RankingService {
             FROM UserPoint up
             JOIN up.user u
             WHERE up.totalPoint > 0
-            AND u.state = 1
+            AND u.state = 1 
+            AND u.role != com.music.music.user.entity.Role.ADMIN
             ORDER BY up.totalPoint DESC
             """;
 

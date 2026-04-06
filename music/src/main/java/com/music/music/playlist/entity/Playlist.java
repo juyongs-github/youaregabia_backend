@@ -71,8 +71,17 @@ public class Playlist extends BaseEntity {
 
   private LocalDateTime deadline;
 
+  /** 마감 처리 완료 여부 (스케줄러 중복 처리 방지) */
+  @Builder.Default
+  @Column(nullable = false)
+  private boolean finalized = false;
+
   public boolean isDeadlinePassed() {
     return deadline != null && LocalDateTime.now().isAfter(deadline);
+  }
+
+  public void markFinalized() {
+    this.finalized = true;
   }
 
   // 곡 추가 메서드

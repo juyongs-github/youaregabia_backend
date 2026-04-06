@@ -65,8 +65,10 @@ public class PlaylistFinalizeScheduler {
             return;
         }
 
-        // 10곡 이하면 순위 처리 불필요
+        // 10곡 이하면 순위 처리 불필요, 마감 완료 표시
         if (songs.size() <= TOP_SONGS_LIMIT) {
+            playlist.markFinalized();
+            playlistRepository.save(playlist);
             return;
         }
 
@@ -95,6 +97,8 @@ public class PlaylistFinalizeScheduler {
             playlistSongRepository.delete(ps);
         }
 
+        playlist.markFinalized();
+        playlistRepository.save(playlist);
         log.info("플레이리스트 마감 완료: playlistId={}, 삭제된 곡 수={}", playlistId, toDelete.size());
     }
 }

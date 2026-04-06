@@ -187,14 +187,25 @@ public class VectorSearchService {
 
             long mappingStartedAt = System.nanoTime();
             Map<Long, Song> songsById = loadSongsById(results);
+            // 기준곡 ID (DB 기준) - 문자열 인코딩 차이에 관계없이 정확히 제외
+            final Long seedSongId = seedSong != null ? seedSong.getId() : null;
+            String seedTitleNorm = normalizeTitleOnly(trackName);
+            String seedArtistNorm = normalizeArtistKey(artistName);
+
             List<VectorCandidate> allCandidates = results.stream()
                     .filter(r -> {
+                        Object idObj = r.get("id");
                         String name = (String) r.get("trackName");
                         String artist = (String) r.get("artistName");
                         if (name == null) return false;
-                        boolean sameTrack = name.equalsIgnoreCase(trackName);
-                        boolean sameArtist = artistName != null && artist != null && artist.equalsIgnoreCase(artistName);
-                        return !(sameTrack && sameArtist);
+                        // DB ID 기준으로 기준곡 제외 (특수문자·인코딩 차이 무관)
+                        if (seedSongId != null && idObj != null
+                                && seedSongId.equals(((Number) idObj).longValue())) return false;
+                        // 기준곡과 같은 아티스트의 다른 버전 제외 (Live, Remix 등)
+                        if (!seedTitleNorm.isBlank()
+                                && normalizeTitleOnly(name).equals(seedTitleNorm)
+                                && normalizeArtistKey(artist).equals(seedArtistNorm)) return false;
+                        return true;
                     })
                     .map(r -> {
                         Object idObj = r.get("id");
@@ -375,6 +386,21 @@ public class VectorSearchService {
             return true;
         }
         return sameGenreFamily(s, c);
+    }
+
+    /** 버전 표기 제거 후 제목 정규화 (기준곡 버전 필터링용) */
+    private String normalizeTitleOnly(String title) {
+        if (title == null) return "";
+        return title
+                .replaceAll("(?i)\\s*[-–]\\s*(live|acoustic|remix|inst\\.?|instrumental|radio\\s*edit|remaster(ed)?|version|ver\\.).*$", "")
+                .replaceAll("(?i)\\s*\\(.*?(live|acoustic|remix|inst\\.?|instrumental|remaster(ed)?|version|ver\\.|반주|노래방|mr).*?\\)", "")
+                .replaceAll("[^\\p{L}\\p{N}]", "")
+                .toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeArtistKey(String artist) {
+        if (artist == null) return "";
+        return artist.replaceAll("[^\\p{L}\\p{N}]", "").toLowerCase(Locale.ROOT);
     }
 
     private String normalizeGenre(String genre) {

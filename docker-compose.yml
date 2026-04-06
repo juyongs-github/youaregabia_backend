@@ -67,17 +67,7 @@ services:
     ports:
       - "8080:8080"
 
-  qdrant:
-    image: qdrant/qdrant:latest
-    container_name: music-qdrant
-    restart: always
-    ports:
-      - "6333:6333"
-      - "6334:6334"
-    volumes:
-      - qdrant-data:/qdrant/storage
-
-  python-vector:
+python-vector:
     build:
       context: ./python-vector
       dockerfile: Dockerfile
@@ -111,5 +101,4 @@ services:
 volumes:
   mysql-data:
   uploads:
-  qdrant-data:
   python-vector-data:

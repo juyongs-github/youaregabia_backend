@@ -146,11 +146,18 @@ public class RecommendationOrchestrator {
             versionDeduped.putIfAbsent(key, dto);
         }
 
-        // 버전 트랙 제거 + 점수 내림차순 정렬 → pool 확정
+        // 버전 트랙 제거 + 점수 내림차순 정렬
         List<RecommendedSongDto> pool = versionDeduped.values().stream()
                 .filter(dto -> !isVersionedTrack(dto.getSong().getTrackName()))
                 .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
                 .collect(Collectors.toList());
+
+        // 같은 제목 다른 아티스트 → 점수 높은 1곡만 유지 (pool이 이미 점수 순이므로 putIfAbsent = 최고 점수 우선)
+        Map<String, RecommendedSongDto> titleDeduped = new LinkedHashMap<>();
+        for (RecommendedSongDto dto : pool) {
+            titleDeduped.putIfAbsent(normalizeTitleOnly(dto.getSong().getTrackName()), dto);
+        }
+        pool = new ArrayList<>(titleDeduped.values());
 
         // 아티스트별 최대 3곡 제한
         final int MAX_PER_ARTIST = 3;
@@ -239,6 +246,15 @@ public class RecommendationOrchestrator {
                 .map(s -> s.trim().replaceAll("[^\\p{L}\\p{N}]", "").toLowerCase())
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
+    }
+
+    private String normalizeTitleOnly(String trackName) {
+        if (trackName == null) return "";
+        return trackName
+                .replaceAll("(?i)\\s*[-–]\\s*(live|acoustic|remix|inst\\.?|instrumental|radio\\s*edit|remaster(ed)?|version|ver\\.).*$", "")
+                .replaceAll("(?i)\\s*\\(.*?(live|acoustic|remix|inst\\.?|instrumental|remaster(ed)?|version|ver\\.|반주|노래방|mr).*?\\)", "")
+                .replaceAll("[^\\p{L}\\p{N}]", "")
+                .toLowerCase(Locale.ROOT);
     }
 
     private String normalizeTrackKey(String trackName, String artistName) {

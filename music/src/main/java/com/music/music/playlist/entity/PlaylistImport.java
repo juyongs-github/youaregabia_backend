@@ -33,6 +33,10 @@ public class PlaylistImport extends BaseEntity {
     @JoinColumn(name = "playlist_id")
     private Playlist playlist;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "imported_playlist_id")
+    private Playlist importedPlaylist;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id")
     private User user;

@@ -148,7 +148,7 @@ public class PlaylistService {
                     .map(u -> playlistLikeRepository.existsByPlaylistIdAndUserId(playlistId, u.getId()))
                     .orElse(false);
             hasImported = userRepository.findByEmail(email)
-                    .map(u -> playlistImportRepository.existsByPlaylistIdAndUserId(playlistId, u.getId()))
+                    .map(u -> playlistImportRepository.existsByPlaylistIdAndUserIdAndImportedPlaylistIsNotNull(playlistId, u.getId()))
                     .orElse(false);
         }
         return CollaboPlaylistResponseDto.builder()
@@ -289,6 +289,11 @@ public class PlaylistService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
+        // 이미 가져온 경우 중복 방지
+        if (playlistImportRepository.existsByPlaylistIdAndUserIdAndImportedPlaylistIsNotNull(collaboPlaylistId, user.getId())) {
+            throw new IllegalArgumentException("이미 내 플레이리스트로 가져온 공동 플레이리스트입니다.");
+        }
+
         // 투표수 맵 (playlistSongId → voteCount)
         Map<Long, Long> voteCountMap = playlistSongVoteRepository.countVotesByPlaylistId(collaboPlaylistId)
                 .stream()
@@ -323,6 +328,7 @@ public class PlaylistService {
         // import 이력 저장
         playlistImportRepository.save(PlaylistImport.builder()
                 .playlist(source)
+                .importedPlaylist(newPlaylist)
                 .user(user)
                 .build());
 
@@ -342,6 +348,7 @@ public class PlaylistService {
         // FK 의존 순서대로 삭제
         playlistSongVoteRepository.deleteByPlaylistId(id); // playlist_song_vote
         playlistLikeRepository.deleteByPlaylistId(id);     // playlist_like
+        playlistImportRepository.deleteByImportedPlaylistId(id); // imported my-playlist link
         playlistImportRepository.deleteByPlaylistId(id);   // playlist_import
         playlistRepository.deleteById(id);                 // playlist (cascade로 playlist_song, review 삭제)
     }

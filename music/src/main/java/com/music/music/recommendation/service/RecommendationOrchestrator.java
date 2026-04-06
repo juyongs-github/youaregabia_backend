@@ -177,7 +177,8 @@ public class RecommendationOrchestrator {
         result.addAll(pickWithVariety(vectorPool, vectorSlots));
         result.addAll(pickWithVariety(lastFmPool, lastFmSlots));
 
-        Collections.shuffle(result);
+        // 유사도 높은 순 정렬
+        result.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
         result = trimToLimit(result, limit);
         logSourceSongs("final", result);
 

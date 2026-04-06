@@ -236,27 +236,11 @@ public class VectorSearchService {
                     .sorted((a, b) -> Double.compare(b.rerankedScore, a.rerankedScore))
                     .collect(Collectors.toList());
 
-            List<VectorCandidate> strict = allCandidates.stream()
+            // 60% 이상만 선발, relaxed fallback 없음
+            List<VectorCandidate> selected = allCandidates.stream()
                     .filter(c -> c.rerankedScore >= MIN_SIMILARITY_SCORE_STRICT)
                     .limit(limit)
                     .collect(Collectors.toList());
-
-            List<VectorCandidate> selected = new ArrayList<>(strict);
-            if (selected.size() < Math.min(limit, MIN_STRICT_RESULTS)) {
-                Set<Long> selectedIds = selected.stream()
-                        .map(c -> c.song.getId())
-                        .collect(Collectors.toCollection(LinkedHashSet::new));
-                List<VectorCandidate> relaxedFill = allCandidates.stream()
-                        .filter(c -> c.rerankedScore >= MIN_SIMILARITY_SCORE_RELAXED)
-                        .filter(c -> !selectedIds.contains(c.song.getId()))
-                        .limit(limit - selected.size())
-                        .collect(Collectors.toList());
-                selected.addAll(relaxedFill);
-            }
-
-            if (selected.size() > limit) {
-                selected = selected.subList(0, limit);
-            }
 
             List<RecommendedSongDto> recommendations = selected.stream()
                     .map(c -> RecommendedSongDto.builder()

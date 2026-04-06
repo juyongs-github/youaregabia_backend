@@ -24,7 +24,7 @@ import com.music.music.recommendation.service.VectorSearchService;
 
 @RestController
 public class MusicApiController {
-  private static final int DEFAULT_RECOMMENDATION_LIMIT = 20;
+  private static final int DEFAULT_RECOMMENDATION_LIMIT = 15;
   private Logger logger = LoggerFactory.getLogger(MusicApiController.class);
 
   @Autowired

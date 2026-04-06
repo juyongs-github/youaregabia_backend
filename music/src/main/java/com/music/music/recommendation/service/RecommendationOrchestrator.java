@@ -37,7 +37,7 @@ public class RecommendationOrchestrator {
     private static final Logger logger = LoggerFactory.getLogger(RecommendationOrchestrator.class);
 
     private static final int MAX_RECOMMEND_TIMEOUT_MS = 5000;
-    private static final long RECOMMEND_CACHE_TTL_MS = TimeUnit.MINUTES.toMillis(10);
+    private static final long RECOMMEND_CACHE_TTL_MS = TimeUnit.MINUTES.toMillis(2);
     private static final int PER_SOURCE_LIMIT = 10;
     private static final int PINNED_TOP_COUNT = 2;
     private static final String[] LASTFM_STABLE_REASONS = {

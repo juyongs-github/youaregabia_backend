@@ -345,7 +345,7 @@ def index_song(req: IndexRequest):
 @app.post("/vector/search")
 def search_songs(req: SearchRequest):
     """오디오 유사도 주도 검색.
-    오디오 있을 때: 최종점수 = 0.75 × 오디오유사도 + 0.25 × 텍스트유사도
+    오디오 있을 때: 최종점수 = 0.70 × min-max정규화(오디오유사도) + 0.30 × 텍스트유사도
     오디오 없을 때: 최종점수 = 텍스트유사도만 사용
     후보 탐색: 오디오 인덱스 우선, 텍스트 인덱스로 보충
     """
@@ -401,19 +401,31 @@ def search_songs(req: SearchRequest):
                 for m in audio_meta
                 if _is_active(m) and isinstance(m.get("audio_idx"), int)
             }
+            # 오디오 히트 수집 후 min-max 정규화 (모든 곡이 같은 점수로 나오는 현상 방지)
+            raw_audio_hits = []
             for a_score, a_idx in zip(a_scores[0], a_indices[0]):
                 if a_idx < 0 or a_idx >= len(audio_meta):
                     continue
                 ameta = audio_lookup.get(int(a_idx))
-                if not ameta:
-                    continue
+                if ameta:
+                    raw_audio_hits.append((float(a_score), a_idx, ameta))
+
+            if raw_audio_hits:
+                a_min = min(h[0] for h in raw_audio_hits)
+                a_max = max(h[0] for h in raw_audio_hits)
+                a_range = a_max - a_min if a_max > a_min else 1.0
+            else:
+                a_min, a_range = 0.0, 1.0
+
+            for raw_score, a_idx, ameta in raw_audio_hits:
+                norm_audio_score = (raw_score - a_min) / a_range
                 song_id = ameta["id"]
                 raw_vector = ameta.get("raw_vector")
                 detail = None
                 if raw_vector and len(raw_vector) == AUDIO_DIM:
                     detail = _audio_detail(query_audio_vec, np.array(raw_vector, dtype=np.float32))
                 t_score = text_score_map.get(song_id, 0.0)
-                final_score = round(0.75 * float(a_score) + 0.25 * t_score, 4)
+                final_score = round(0.70 * norm_audio_score + 0.30 * t_score, 4)
 
                 # 텍스트 메타 보충 (trackName, artistName, genreName)
                 tmeta = next(

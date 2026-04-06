@@ -236,9 +236,16 @@ public class VectorSearchService {
                     .sorted((a, b) -> Double.compare(b.rerankedScore, a.rerankedScore))
                     .collect(Collectors.toList());
 
-            // 60% 이상만 선발, relaxed fallback 없음
-            List<VectorCandidate> selected = allCandidates.stream()
+            // 60% 이상 후보 전체 수집
+            List<VectorCandidate> eligible = allCandidates.stream()
                     .filter(c -> c.rerankedScore >= MIN_SIMILARITY_SCORE_STRICT)
+                    .collect(Collectors.toList());
+
+            // 조건 맞는 곡이 limit보다 많으면 랜덤하게 선택 (매 요청마다 다양한 곡 노출)
+            if (eligible.size() > limit) {
+                Collections.shuffle(eligible);
+            }
+            List<VectorCandidate> selected = eligible.stream()
                     .limit(limit)
                     .collect(Collectors.toList());
 

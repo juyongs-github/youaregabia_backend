@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+songs.index
+songs_meta.json
+songs_audio.index
+songs_audio_meta.json

@@ -26,6 +26,7 @@ import com.music.music.chatbot.service.InquiryService;
 import com.music.music.goods.dto.OrderDto;
 import com.music.music.goods.entity.OrderStatus;
 import com.music.music.goods.service.OrderService;
+import com.music.music.recommendation.service.VectorIndexScheduler;
 import com.music.music.user.entity.PointType;
 import com.music.music.user.entity.Role;
 import com.music.music.user.entity.User;
@@ -53,6 +54,7 @@ public class AdminController {
   private final UserPointService userPointService;
   private final PointHistoryRepository pointHistoryRepository;
   private final InquiryService inquiryService;
+  private final VectorIndexScheduler vectorIndexScheduler;
 
   // 전체 유저 목록 조회
   @GetMapping("/users")
@@ -229,6 +231,14 @@ public class AdminController {
   public ResponseEntity<Void> deleteInquiry(@PathVariable Long id) {
     inquiryService.deleteInquiry(id);
     return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/vector/index/run")
+  public ResponseEntity<Map<String, Object>> runVectorIndexing() {
+    vectorIndexScheduler.indexNewSongs();
+    return ResponseEntity.ok(Map.of(
+        "status", "ok",
+        "message", "벡터 증분 인덱싱을 실행했습니다."));
   }
 
   public record AdminPointLogDto(

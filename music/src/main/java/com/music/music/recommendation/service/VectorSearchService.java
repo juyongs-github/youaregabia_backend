@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -41,6 +42,7 @@ public class VectorSearchService {
     private static final int MIN_STRICT_RESULTS = 6;
     private static final long MIN_REASONABLE_DURATION_MS = 90_000L;
     private static final long MAX_REASONABLE_DURATION_MS = 720_000L;
+    private static final long AVAILABILITY_RECHECK_INTERVAL_MS = 30_000L;
     private static final List<String> LOW_QUALITY_KEYWORDS = Arrays.asList(
             "inst", "instrumental", "mr", "노래방", "karaoke", "반주",
             "명상", "meditation", "healing", "힐링", "study", "공부", "asmr");
@@ -50,6 +52,7 @@ public class VectorSearchService {
 
     private RestClient pythonClient;
     private boolean vectorAvailable = false;
+    private volatile long lastAvailabilityCheckAt = 0L;
 
     private final EmbeddingModel embeddingModel;
     private final SongRepository songRepository;
@@ -67,6 +70,7 @@ public class VectorSearchService {
 
     @SuppressWarnings("unchecked")
     private void checkAvailability() {
+        lastAvailabilityCheckAt = System.currentTimeMillis();
         try {
             java.util.Map<String, Object> status = pythonClient.get().uri("/status")
                     .retrieve()
@@ -85,8 +89,16 @@ public class VectorSearchService {
     }
 
     /** 곡 1개를 FAISS에 인덱싱 (텍스트 벡터 + previewUrl 있으면 오디오 특징도 함께) */
+    private boolean ensureVectorAvailable() {
+        long now = System.currentTimeMillis();
+        if (!vectorAvailable && now - lastAvailabilityCheckAt >= AVAILABILITY_RECHECK_INTERVAL_MS) {
+            checkAvailability();
+        }
+        return vectorAvailable;
+    }
+
     public void indexSong(Song song) {
-        if (!vectorAvailable) return;
+        if (!ensureVectorAvailable()) return;
         try {
             List<Float> vector = embed(buildText(song));
             java.util.HashMap<String, Object> body = new java.util.HashMap<>();
@@ -125,7 +137,7 @@ public class VectorSearchService {
     @SuppressWarnings("unchecked")
     private List<RecommendedSongDto> findSimilarInternal(
             String trackName, String artistName, String genreName, int limit, boolean allowAutoIndexOnEmpty) {
-        if (!vectorAvailable) return Collections.emptyList();
+        if (!ensureVectorAvailable()) return Collections.emptyList();
         long startedAt = System.nanoTime();
         try {
             Song seedSong = songRepository
@@ -174,6 +186,7 @@ public class VectorSearchService {
             if (results == null) return Collections.emptyList();
 
             long mappingStartedAt = System.nanoTime();
+            Map<Long, Song> songsById = loadSongsById(results);
             List<VectorCandidate> allCandidates = results.stream()
                     .filter(r -> {
                         String name = (String) r.get("trackName");
@@ -196,25 +209,26 @@ public class VectorSearchService {
                         Map<String, Object> audioDetail = r.get("audio_detail") instanceof Map<?, ?>
                                 ? (Map<String, Object>) r.get("audio_detail") : null;
 
-                        return songRepository.findById(songId)
-                                .map(s -> VectorCandidate.builder()
-                                        .song(s)
-                                        .baseScore(score)
-                                        .textScore(textScore)
-                                        .audioScore(audioScore)
-                                        .audioDetail(audioDetail)
-                                        .rerankedScore(rerankScore(
-                                                score,
-                                                textScore,
-                                                audioScore,
-                                                seedGenre,
-                                                s.getGenreName(),
-                                                seedDurationMs,
-                                                s.getDurationMs(),
-                                                s.getTrackName(),
-                                                s.getArtistName()))
-                                        .build())
-                                .orElse(null);
+                        Song song = songsById.get(songId);
+                        if (song == null) return null;
+
+                        return VectorCandidate.builder()
+                                .song(song)
+                                .baseScore(score)
+                                .textScore(textScore)
+                                .audioScore(audioScore)
+                                .audioDetail(audioDetail)
+                                .rerankedScore(rerankScore(
+                                        score,
+                                        textScore,
+                                        audioScore,
+                                        seedGenre,
+                                        song.getGenreName(),
+                                        seedDurationMs,
+                                        song.getDurationMs(),
+                                        song.getTrackName(),
+                                        song.getArtistName()))
+                                .build();
                     })
                     .filter(Objects::nonNull)
                     .filter(c -> !isLowQualityCandidate(c.song.getTrackName(), c.song.getArtistName()))
@@ -279,6 +293,19 @@ public class VectorSearchService {
     }
 
     // ── private helpers ──────────────────────────────────
+
+    private Map<Long, Song> loadSongsById(List<Map<String, Object>> results) {
+        Set<Long> songIds = results.stream()
+                .map(r -> r.get("id"))
+                .filter(Number.class::isInstance)
+                .map(Number.class::cast)
+                .map(Number::longValue)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Map<Long, Song> songsById = new HashMap<>();
+        songRepository.findAllById(songIds).forEach(song -> songsById.put(song.getId(), song));
+        return songsById;
+    }
 
     private String buildSearchQuery(String trackName, String artistName, String genreName, Song seedSong) {
         StringBuilder query = new StringBuilder();

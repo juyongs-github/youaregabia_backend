@@ -39,11 +39,13 @@ except ImportError as e:
     logger.warning(f"[Audio] 오디오 라이브러리 미설치 - 오디오 특징 추출 비활성화: {e}")
 
 app = FastAPI()
+DATA_DIR = os.environ.get("VECTOR_DATA_DIR", ".")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # ── 텍스트 FAISS 설정 ────────────────────────────────────
 DIMENSION = 1536          # text-embedding-3-small 차원
-INDEX_PATH = "songs.index"
-META_PATH  = "songs_meta.json"
+INDEX_PATH = os.path.join(DATA_DIR, "songs.index")
+META_PATH  = os.path.join(DATA_DIR, "songs_meta.json")
 
 if os.path.exists(INDEX_PATH) and os.path.exists(META_PATH):
     faiss_index = faiss.read_index(INDEX_PATH)
@@ -58,8 +60,8 @@ else:
 # ── 오디오 FAISS 설정 ────────────────────────────────────
 # MFCC(13) + 크로마(12) + 템포·RMS·스펙트럴 센트로이드·ZCR·롤오프(5) = 30차원
 AUDIO_DIM = 30
-AUDIO_INDEX_PATH = "songs_audio.index"
-AUDIO_META_PATH  = "songs_audio_meta.json"
+AUDIO_INDEX_PATH = os.path.join(DATA_DIR, "songs_audio.index")
+AUDIO_META_PATH  = os.path.join(DATA_DIR, "songs_audio_meta.json")
 
 if os.path.exists(AUDIO_INDEX_PATH) and os.path.exists(AUDIO_META_PATH):
     audio_index = faiss.read_index(AUDIO_INDEX_PATH)

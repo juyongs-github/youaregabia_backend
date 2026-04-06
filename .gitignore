@@ -117,11 +117,10 @@ music/src/main/resources/application.yml
 .gradle-user-home/
 
 # Python local artifacts
-ytmusic-service/venv/
-ytmusic-service/__pycache__/
-ytmusic-service/*.pyc
-ytmusic-service/songs.index
-ytmusic-service/songs_meta.json
-ytmusic-service/songs_audio.index
-ytmusic-service/songs_audio_meta.json
-browser.json
+python-vector/venv/
+python-vector/__pycache__/
+python-vector/*.pyc
+python-vector/songs.index
+python-vector/songs_meta.json
+python-vector/songs_audio.index
+python-vector/songs_audio_meta.json

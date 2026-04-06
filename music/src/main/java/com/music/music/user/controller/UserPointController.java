@@ -35,6 +35,7 @@ public class UserPointController {
         UserPoint point = userPointService.getPoint(email);
         return Map.of(
             "totalPoint", point.getTotalPoint(),
+            "accumulatedPoint", point.getAccumulatedPoint(),  // 추가
             "grade", point.getGrade()
         );
     }

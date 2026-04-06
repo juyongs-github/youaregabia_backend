@@ -330,8 +330,9 @@ public class VectorSearchService {
             String artistName) {
         double score = baseScore;
 
+        // 오디오 유사도가 있으면 더 강하게 반영 (오디오 주도)
         if (audioScore != null && audioScore > 0) {
-            score += (audioScore - textScore) * 0.15;
+            score += (audioScore - textScore) * 0.30;
         }
         if (isGenreCompatible(seedGenre, candidateGenre)) {
             score += 0.03;

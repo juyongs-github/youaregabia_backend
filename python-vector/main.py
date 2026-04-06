@@ -344,8 +344,10 @@ def index_song(req: IndexRequest):
 
 @app.post("/vector/search")
 def search_songs(req: SearchRequest):
-    """텍스트 유사도 + 오디오 유사도 결합 기반 유사곡 검색.
-    최종점수 = 0.6 × 텍스트유사도 + 0.4 × 오디오유사도 (오디오 없으면 텍스트만)
+    """오디오 유사도 주도 검색.
+    오디오 있을 때: 최종점수 = 0.75 × 오디오유사도 + 0.25 × 텍스트유사도
+    오디오 없을 때: 최종점수 = 텍스트유사도만 사용
+    후보 탐색: 오디오 인덱스 우선, 텍스트 인덱스로 보충
     """
     # 쿼리 오디오 특징 추출 (lock 밖에서 실행)
     query_audio_vec = None
@@ -367,68 +369,108 @@ def search_songs(req: SearchRequest):
         if faiss_index.ntotal == 0:
             return {"results": []}
 
-        # ── 텍스트 검색 ──
+        k = min(req.limit + 20, faiss_index.ntotal)
+
+        # ── 텍스트 인덱스 검색 ──
         vec = np.array([req.vector], dtype=np.float32)
         faiss.normalize_L2(vec)
-        k = min(req.limit + 10, faiss_index.ntotal)
         text_scores, text_indices = faiss_index.search(vec, k)
         text_lookup = {
             int(m.get("faiss_idx")): m
             for m in song_meta
             if _is_active(m) and isinstance(m.get("faiss_idx"), int)
         }
-
-        # 텍스트 후보 → {song_id: text_score}
-        candidates: dict[int, dict] = {}
+        text_score_map: dict[int, float] = {}
         for score, idx in zip(text_scores[0], text_indices[0]):
             if idx < 0 or idx >= len(song_meta):
                 continue
             meta = text_lookup.get(int(idx))
             if meta:
-                candidates[meta["id"]] = {
-                    "id": meta["id"], "trackName": meta["trackName"],
-                    "artistName": meta["artistName"], "genreName": meta["genreName"],
-                    "text_score": float(score),
-                }
+                text_score_map[meta["id"]] = float(score)
 
-        # ── 오디오 유사도 결합 ──
+        candidates: dict[int, dict] = {}
+
+        # ── 오디오 인덱스 우선 검색 ──
         if query_audio_vec is not None and audio_index.ntotal > 0:
             av = query_audio_vec.reshape(1, -1)
             faiss.normalize_L2(av)
-            ak = min(req.limit + 10, audio_index.ntotal)
+            ak = min(req.limit + 20, audio_index.ntotal)
             a_scores, a_indices = audio_index.search(av, ak)
             audio_lookup = {
                 int(m.get("audio_idx")): m
                 for m in audio_meta
                 if _is_active(m) and isinstance(m.get("audio_idx"), int)
             }
-            audio_score_map: dict[int, dict] = {}
             for a_score, a_idx in zip(a_scores[0], a_indices[0]):
                 if a_idx < 0 or a_idx >= len(audio_meta):
                     continue
                 ameta = audio_lookup.get(int(a_idx))
-                if ameta:
-                    detail = None
-                    raw_vector = ameta.get("raw_vector")
-                    if raw_vector and len(raw_vector) == AUDIO_DIM:
-                        detail = _audio_detail(query_audio_vec, np.array(raw_vector, dtype=np.float32))
-                    audio_score_map[ameta["id"]] = {
-                        "score": float(a_score),
-                        "detail": detail,
-                    }
+                if not ameta:
+                    continue
+                song_id = ameta["id"]
+                raw_vector = ameta.get("raw_vector")
+                detail = None
+                if raw_vector and len(raw_vector) == AUDIO_DIM:
+                    detail = _audio_detail(query_audio_vec, np.array(raw_vector, dtype=np.float32))
+                t_score = text_score_map.get(song_id, 0.0)
+                final_score = round(0.75 * float(a_score) + 0.25 * t_score, 4)
 
-            for song_id, entry in candidates.items():
-                audio_info = audio_score_map.get(song_id)
-                a_score = audio_info["score"] if audio_info else 0.0
-                entry["score"] = round(0.6 * entry["text_score"] + 0.4 * a_score, 4)
-                entry["audio_score"] = a_score
-                if audio_info and audio_info.get("detail"):
-                    entry["audio_detail"] = audio_info["detail"]
+                # 텍스트 메타 보충 (trackName, artistName, genreName)
+                tmeta = next(
+                    (m for m in reversed(song_meta) if m.get("id") == song_id and _is_active(m)),
+                    None,
+                )
+                if tmeta is None:
+                    continue
+                candidates[song_id] = {
+                    "id": song_id,
+                    "trackName": tmeta["trackName"],
+                    "artistName": tmeta["artistName"],
+                    "genreName": tmeta.get("genreName", ""),
+                    "text_score": t_score,
+                    "audio_score": float(a_score),
+                    "score": final_score,
+                }
+                if detail:
+                    candidates[song_id]["audio_detail"] = detail
+
+            # 오디오 인덱스에 없는 곡은 텍스트로 보충 (텍스트 전용 점수)
+            for song_id, t_score in text_score_map.items():
+                if song_id not in candidates:
+                    tmeta = next(
+                        (m for m in reversed(song_meta) if m.get("id") == song_id and _is_active(m)),
+                        None,
+                    )
+                    if tmeta is None:
+                        continue
+                    candidates[song_id] = {
+                        "id": song_id,
+                        "trackName": tmeta["trackName"],
+                        "artistName": tmeta["artistName"],
+                        "genreName": tmeta.get("genreName", ""),
+                        "text_score": t_score,
+                        "score": t_score,
+                    }
         else:
-            for entry in candidates.values():
-                entry["score"] = entry["text_score"]
+            # 오디오 없으면 텍스트만 사용
+            for song_id, t_score in text_score_map.items():
+                tmeta = next(
+                    (m for m in reversed(song_meta) if m.get("id") == song_id and _is_active(m)),
+                    None,
+                )
+                if tmeta is None:
+                    continue
+                candidates[song_id] = {
+                    "id": song_id,
+                    "trackName": tmeta["trackName"],
+                    "artistName": tmeta["artistName"],
+                    "genreName": tmeta.get("genreName", ""),
+                    "text_score": t_score,
+                    "score": t_score,
+                }
 
     results = sorted(candidates.values(), key=lambda x: x["score"], reverse=True)[:req.limit]
+    logger.info(f"[VectorSearch] 결과 {len(results)}곡 (오디오{'O' if query_audio_vec is not None else 'X'})")
     return {"results": results}
 
 

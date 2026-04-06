@@ -82,12 +82,10 @@ public class PlaylistService {
             throw new IllegalArgumentException("공동 플레이리스트는 마감일이 필수입니다.");
         }
 
-        String imageUrl;
+        String imageUrl = null;
 
         if (file != null && !file.isEmpty()) {
             imageUrl = fileService.upload(file);
-        } else {
-            imageUrl = "/images/default-playlist.png";
         }
 
         Playlist playlist = Playlist.builder()

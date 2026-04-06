@@ -37,9 +37,11 @@ public class RecommendationOrchestrator {
     private static final Logger logger = LoggerFactory.getLogger(RecommendationOrchestrator.class);
 
     private static final int MAX_RECOMMEND_TIMEOUT_MS = 5000;
-    private static final long RECOMMEND_CACHE_TTL_MS = TimeUnit.MINUTES.toMillis(2);
+    /** 후보 pool 캐시 유지 시간 (비용이 큰 OpenAI 임베딩·API 호출 결과) */
+    private static final long POOL_CACHE_TTL_MS = TimeUnit.MINUTES.toMillis(10);
     private static final int PER_SOURCE_LIMIT = 10;
-    private static final int PINNED_TOP_COUNT = 2;
+    /** 매 요청마다 항상 고정으로 노출할 상위 곡 수 */
+    private static final int PINNED_TOP_COUNT = 3;
     private static final String[] LASTFM_STABLE_REASONS = {
             "취향 흐름을 크게 벗어나지 않아 안정적으로 이어 듣기 좋아요.",
             "분위기 결이 비슷해서 다음 곡으로 붙였을 때 자연스러워요.",
@@ -49,7 +51,8 @@ public class RecommendationOrchestrator {
 
     private final MusicApiService musicApiService;
     private final VectorSearchService vectorSearchService;
-    private final Map<String, CacheEntry> recommendationCache = new ConcurrentHashMap<>();
+    /** pool 캐시: 소스별 후보 전체를 점수 순으로 저장 */
+    private final Map<String, CacheEntry> poolCache = new ConcurrentHashMap<>();
 
     public RecommendationOrchestrator(
             MusicApiService musicApiService,
@@ -61,30 +64,53 @@ public class RecommendationOrchestrator {
     public List<RecommendedSongDto> recommend(
             String trackName, String artistName, String genreName, int limit) {
 
-        int candidateLimit = Math.max(limit + 2, 8);
         String cacheKey = buildCacheKey(trackName, artistName, genreName, limit);
-        CacheEntry freshCache = getFreshCache(cacheKey);
-        if (freshCache != null) {
-            logger.info("[Orchestrator] 캐시 히트 - {}ms 내 반환", freshCache.ageMs());
-            return trimToLimit(new ArrayList<>(freshCache.recommendations), limit);
+
+        // pool 캐시 확인 (API 호출·임베딩 비용 절감)
+        List<RecommendedSongDto> pool = getFreshPool(cacheKey);
+
+        if (pool == null) {
+            pool = buildPool(trackName, artistName, genreName, limit);
+            if (!pool.isEmpty()) {
+                rememberPool(cacheKey, pool);
+            } else {
+                // 실시간 결과 없으면 stale 캐시 폴백
+                CacheEntry stale = poolCache.get(cacheKey);
+                if (stale != null && !stale.pool.isEmpty()) {
+                    logger.warn("[Orchestrator] 실시간 결과 없음 - 스테일 pool 폴백 사용");
+                    pool = stale.pool;
+                }
+            }
         }
 
+        // pool에서 매 요청마다 새로 선택: 상위 N곡 고정 + 나머지 랜덤
+        List<RecommendedSongDto> result = selectFromPool(pool, limit);
+        logSourceSongs("final", result);
+        return result;
+    }
+
+    /** API·임베딩 호출로 후보 pool을 새로 빌드 (점수 순 정렬) */
+    private List<RecommendedSongDto> buildPool(
+            String trackName, String artistName, String genreName, int limit) {
+
+        int candidateLimit = Math.max(limit + 2, 8);
         long startedAt = System.nanoTime();
+
         CompletableFuture<List<RecommendedSongDto>> lastFmFuture =
                 CompletableFuture.supplyAsync(() -> getLastFmRecommendations(trackName, artistName));
         CompletableFuture<List<RecommendedSongDto>> vectorFuture =
                 CompletableFuture.supplyAsync(() ->
                         vectorSearchService.findSimilar(trackName, artistName, genreName, candidateLimit));
+
         boolean timedOut = false;
         try {
             CompletableFuture.allOf(lastFmFuture, vectorFuture)
                     .get(MAX_RECOMMEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException timeoutException) {
+        } catch (TimeoutException e) {
             timedOut = true;
-            logger.warn("[RecommendationOrchestrator] {}ms 타임아웃 - 가용 결과로 진행",
-                    MAX_RECOMMEND_TIMEOUT_MS);
+            logger.warn("[Orchestrator] {}ms 타임아웃 - 가용 결과로 진행", MAX_RECOMMEND_TIMEOUT_MS);
         } catch (Exception e) {
-            logger.warn("[RecommendationOrchestrator] 병렬 추천 처리 중 예외: {}", e.getMessage());
+            logger.warn("[Orchestrator] 병렬 추천 처리 중 예외: {}", e.getMessage());
         }
 
         if (timedOut) {
@@ -93,11 +119,11 @@ public class RecommendationOrchestrator {
         }
 
         List<RecommendedSongDto> lastFmResult = safeGet(lastFmFuture);
-        List<RecommendedSongDto> vectorResult = safeGet(vectorFuture);
-        long totalElapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+        List<RecommendedSongDto> vectorResult  = safeGet(vectorFuture);
+        long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
 
-        logger.info("[Orchestrator] 소스별 후보: lastfm={}, vector={} (total={}ms, timeout={}ms)",
-                lastFmResult.size(), vectorResult.size(), totalElapsedMs, MAX_RECOMMEND_TIMEOUT_MS);
+        logger.info("[Orchestrator] 소스별 후보: lastfm={}, vector={} ({}ms)",
+                lastFmResult.size(), vectorResult.size(), elapsed);
         logSourceSongs("vector", vectorResult);
         logSourceSongs("lastfm", lastFmResult);
 
@@ -120,7 +146,7 @@ public class RecommendationOrchestrator {
             versionDeduped.putIfAbsent(key, dto);
         }
 
-        // 버전 트랙 제거 + 점수 정렬
+        // 버전 트랙 제거 + 점수 내림차순 정렬 → pool 확정
         List<RecommendedSongDto> pool = versionDeduped.values().stream()
                 .filter(dto -> !isVersionedTrack(dto.getSong().getTrackName()))
                 .sorted((a, b) -> Double.compare(b.getScore(), a.getScore()))
@@ -139,60 +165,36 @@ public class RecommendationOrchestrator {
                 keys.forEach(k -> artistCount.merge(k, 1, Integer::sum));
             }
         }
-        pool = artistLimited;
+        logger.info("[Orchestrator] pool 빌드 완료: {}", artistLimited.size());
+        return artistLimited;
+    }
 
-        logger.info("[Orchestrator] 필터 후 pool={}", pool.size());
-
+    /**
+     * pool에서 매 요청마다 새로 선택.
+     * 상위 PINNED_TOP_COUNT 곡은 항상 고정 노출, 나머지는 랜덤 선택.
+     */
+    private List<RecommendedSongDto> selectFromPool(List<RecommendedSongDto> pool, int limit) {
+        if (pool.isEmpty()) return List.of();
         if (pool.size() <= limit) {
-            Collections.shuffle(pool);
-            rememberCache(cacheKey, pool);
-            return trimToLimit(pool, limit);
-        }
-
-        // vector : lastfm = 3:2 비율 배분
-        List<RecommendedSongDto> vectorPool = new ArrayList<>();
-        List<RecommendedSongDto> lastFmPool = new ArrayList<>();
-        for (RecommendedSongDto dto : pool) {
-            if ("lastfm".equals(dto.getSource())) lastFmPool.add(dto);
-            else                                  vectorPool.add(dto);
-        }
-
-        int vectorTarget = Math.max(1, limit * 3 / 5);
-        int lastFmTarget = limit - vectorTarget;
-        int vectorSlots  = Math.min(vectorTarget, vectorPool.size());
-        int lastFmSlots  = Math.min(lastFmTarget, lastFmPool.size());
-
-        // 한 쪽이 부족하면 다른 쪽으로 보충
-        int remaining = limit - (vectorSlots + lastFmSlots);
-        if (remaining > 0 && vectorPool.size() > vectorSlots) {
-            vectorSlots += Math.min(remaining, vectorPool.size() - vectorSlots);
-        } else if (remaining > 0 && lastFmPool.size() > lastFmSlots) {
-            lastFmSlots += Math.min(remaining, lastFmPool.size() - lastFmSlots);
-        }
-
-        logger.info("[Orchestrator] 슬롯 배분: vector={}/{}, lastfm={}/{}, 합계={}",
-                vectorSlots, vectorTarget, lastFmSlots, lastFmTarget, vectorSlots + lastFmSlots);
-
-        List<RecommendedSongDto> result = new ArrayList<>();
-        result.addAll(pickWithVariety(vectorPool, vectorSlots));
-        result.addAll(pickWithVariety(lastFmPool, lastFmSlots));
-
-        // 유사도 높은 순 정렬
-        result.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
-        result = trimToLimit(result, limit);
-        logSourceSongs("final", result);
-
-        if (!result.isEmpty()) {
-            rememberCache(cacheKey, result);
+            // pool 전체 반환 (고정곡 이후는 가볍게 섞어서)
+            List<RecommendedSongDto> result = new ArrayList<>(pool);
+            if (result.size() > PINNED_TOP_COUNT) {
+                Collections.shuffle(result.subList(PINNED_TOP_COUNT, result.size()));
+            }
             return result;
         }
 
-        CacheEntry staleCache = recommendationCache.get(cacheKey);
-        if (staleCache != null && !staleCache.recommendations.isEmpty()) {
-            logger.warn("[Orchestrator] 실시간 결과 비어 스테일 캐시 폴백 사용 (age={}ms)",
-                    staleCache.ageMs());
-            return trimToLimit(new ArrayList<>(staleCache.recommendations), limit);
-        }
+        // 상위 PINNED_TOP_COUNT는 항상 고정
+        int pinned = Math.min(PINNED_TOP_COUNT, limit);
+        List<RecommendedSongDto> result = new ArrayList<>(pool.subList(0, pinned));
+
+        // 나머지 pool에서 랜덤 선택
+        List<RecommendedSongDto> rest = new ArrayList<>(pool.subList(pinned, pool.size()));
+        Collections.shuffle(rest);
+        result.addAll(rest.subList(0, Math.min(limit - pinned, rest.size())));
+
+        // 최종 점수 순 정렬
+        result.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
         return result;
     }
 
@@ -208,7 +210,7 @@ public class RecommendationOrchestrator {
                     .limit(PER_SOURCE_LIMIT)
                     .map(song -> {
                         int idx = order.getAndIncrement();
-                        double score = Math.max(0.35, 0.92 - (idx * 0.06));
+                        double score = Math.max(0.60, 0.92 - (idx * 0.06));
                         return RecommendedSongDto.builder()
                                 .song(song)
                                 .reason(buildLastFmStableReason(trackName, artistName))
@@ -223,16 +225,6 @@ public class RecommendationOrchestrator {
         return List.of();
     }
 
-    private List<RecommendedSongDto> pickWithVariety(List<RecommendedSongDto> pool, int n) {
-        if (n <= 0 || pool.isEmpty()) return Collections.emptyList();
-        if (pool.size() <= n) return new ArrayList<>(pool);
-        int pinned = Math.min(PINNED_TOP_COUNT, n);
-        List<RecommendedSongDto> result = new ArrayList<>(pool.subList(0, pinned));
-        List<RecommendedSongDto> rest = new ArrayList<>(pool.subList(pinned, pool.size()));
-        Collections.shuffle(rest);
-        result.addAll(rest.subList(0, Math.min(n - pinned, rest.size())));
-        return result;
-    }
 
     private boolean isVersionedTrack(String trackName) {
         if (trackName == null) return false;
@@ -275,19 +267,20 @@ public class RecommendationOrchestrator {
         return t + "|" + a + "|" + g + "|" + limit;
     }
 
-    private CacheEntry getFreshCache(String cacheKey) {
-        CacheEntry entry = recommendationCache.get(cacheKey);
+    private List<RecommendedSongDto> getFreshPool(String cacheKey) {
+        CacheEntry entry = poolCache.get(cacheKey);
         if (entry == null) return null;
-        if (entry.ageMs() > RECOMMEND_CACHE_TTL_MS) {
-            recommendationCache.remove(cacheKey);
+        if (entry.ageMs() > POOL_CACHE_TTL_MS) {
+            poolCache.remove(cacheKey);
             return null;
         }
-        return entry;
+        logger.info("[Orchestrator] pool 캐시 히트 (age={}ms) - 새로 랜덤 선택", entry.ageMs());
+        return entry.pool;
     }
 
-    private void rememberCache(String cacheKey, List<RecommendedSongDto> recommendations) {
-        if (recommendations == null || recommendations.isEmpty()) return;
-        recommendationCache.put(cacheKey, new CacheEntry(new ArrayList<>(recommendations)));
+    private void rememberPool(String cacheKey, List<RecommendedSongDto> pool) {
+        if (pool == null || pool.isEmpty()) return;
+        poolCache.put(cacheKey, new CacheEntry(new ArrayList<>(pool)));
     }
 
     private List<RecommendedSongDto> trimToLimit(List<RecommendedSongDto> recommendations, int limit) {
@@ -339,11 +332,11 @@ public class RecommendationOrchestrator {
     }
 
     private static class CacheEntry {
-        private final List<RecommendedSongDto> recommendations;
+        private final List<RecommendedSongDto> pool;
         private final long cachedAtMs;
 
-        private CacheEntry(List<RecommendedSongDto> recommendations) {
-            this.recommendations = recommendations;
+        private CacheEntry(List<RecommendedSongDto> pool) {
+            this.pool = pool;
             this.cachedAtMs = System.currentTimeMillis();
         }
 

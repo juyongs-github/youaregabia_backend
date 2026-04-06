@@ -418,7 +418,8 @@ def search_songs(req: SearchRequest):
                 a_min, a_range = 0.0, 1.0
 
             for raw_score, a_idx, ameta in raw_audio_hits:
-                norm_audio_score = (raw_score - a_min) / a_range
+                # 0.5~1.0 범위로 정규화 (하위 곡도 최소 0.5 보장 → 60% 필터 통과 가능 곡 확보)
+                norm_audio_score = 0.5 + 0.5 * (raw_score - a_min) / a_range
                 song_id = ameta["id"]
                 raw_vector = ameta.get("raw_vector")
                 detail = None

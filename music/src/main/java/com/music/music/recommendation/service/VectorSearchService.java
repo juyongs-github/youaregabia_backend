@@ -252,7 +252,7 @@ public class VectorSearchService {
             List<RecommendedSongDto> recommendations = selected.stream()
                     .map(c -> RecommendedSongDto.builder()
                             .song(toDto(c.song))
-                            .reason(vectorReason(c.baseScore, c.textScore, c.audioScore, c.audioDetail))
+                            .reason(vectorReason(c.rerankedScore, c.textScore, c.audioScore, c.audioDetail))
                             .source("vector")
                             .score(c.rerankedScore)
                             .build())

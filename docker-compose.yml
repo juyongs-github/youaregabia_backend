@@ -67,7 +67,7 @@ services:
     ports:
       - "8080:8080"
 
-python-vector:
+  python-vector:
     build:
       context: ./python-vector
       dockerfile: Dockerfile

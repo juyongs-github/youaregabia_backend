@@ -59,6 +59,9 @@ public class Board extends BaseEntity {
   @Column(nullable = false, columnDefinition = "MEDIUMTEXT")
   private String content;
 
+  
+  private String imgUrl;
+
   @Column(nullable = false)
   @Builder.Default 
   private int viewCount = 0;

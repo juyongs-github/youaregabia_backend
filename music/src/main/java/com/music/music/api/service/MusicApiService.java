@@ -385,7 +385,9 @@ public class MusicApiService {
                 .collect(Collectors.toList());
 
         if (!newSongs.isEmpty()) {
-            songIndexingService.saveAndIndex(newSongs); // 비동기 — 즉시 반환
+            // DB 저장은 동기(검색 응답 전 완료) — 곡 제안 타이밍 이슈 방지
+            // 벡터 인덱싱만 비동기로 처리
+            songIndexingService.saveAndIndex(newSongs);
         }
 
         return resultList;

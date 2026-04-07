@@ -40,48 +40,42 @@ public class BoardDto {
         private boolean likedByMe;
         private String imgUrl;
 
-        public BoardDto(Board board, PageResultDTO<ReplyResponseDto> replies, List<BoardSongDto> songs) {
+public BoardDto(Board board, PageResultDTO<ReplyResponseDto> replies, List<BoardSongDto> songs) {
     this.boardId = board.getBoardId();
     this.title = board.getTitle();
     this.content = board.getContent();
     this.writer = board.getBoardType() == BoardType.FREE
-            ? "익명"
-            : board.getUser().getName();
+        ? "익명"
+        : board.getUser().getName();
+    this.writerEmail = board.getUser().getEmail(); // FREE도 항상 내려줌
     this.createdAt = board.getCreatedAt();
     this.boardGenre = board.getBoardGenre().name();
     this.boardType = board.getBoardType().name();
     this.replies = replies;
     this.viewCount = board.getViewCount();
-    this.writerEmail = board.getBoardType() == BoardType.FREE
-            ? null
-            : board.getUser().getEmail();
     this.songs = songs;
     this.likeCount = board.getLikeCount();
-    this.imgUrl = board.getImgUrl(); // 추가
+    this.imgUrl = board.getImgUrl();
 }
 
-        // 목록용 생성자 (댓글 없음)
-        public BoardDto(Board board) {
+public BoardDto(Board board) {
     this.boardId = board.getBoardId();
     this.title = board.getTitle();
     this.writer = board.getBoardType() == BoardType.FREE
-            ? "익명"
-            : board.getUser().getName();
+        ? "익명"
+        : board.getUser().getName();
+    this.writerEmail = board.getUser().getEmail(); // FREE도 항상 내려줌
     this.createdAt = board.getCreatedAt();
     this.boardType = board.getBoardType().name();
     this.boardGenre = board.getBoardGenre().name();
     this.viewCount = board.getViewCount();
-    this.writerEmail = board.getBoardType() == BoardType.FREE
-            ? null
-            : board.getUser().getEmail();
     this.songId = board.getBoardSongs().isEmpty()
-            ? null
-            : board.getBoardSongs().get(0).getSong().getId();
+        ? null
+        : board.getBoardSongs().get(0).getSong().getId();
     this.songs = board.getBoardSongs().stream()
-            .map(BoardSongDto::new)
-            .toList();
+        .map(BoardSongDto::new)
+        .toList();
     this.likeCount = board.getLikeCount();
-    this.imgUrl = board.getImgUrl(); // 추가
+    this.imgUrl = board.getImgUrl();
 }
-
 }

@@ -59,9 +59,9 @@ public class Playlist extends BaseEntity {
   @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
   private List<PlaylistSong> playlistSongs = new ArrayList<>();
 
-  // 플레이리스트 리뷰 추가
+  // 플레이리스트 리뷰 (삭제 시 연쇄 삭제 안 함 - playlist_id를 null로 처리)
   @Builder.Default
-  @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+  @OneToMany(mappedBy = "playlist", fetch = FetchType.LAZY)
   private List<Review> reviews = new ArrayList<>();
 
   private String imageUrl;

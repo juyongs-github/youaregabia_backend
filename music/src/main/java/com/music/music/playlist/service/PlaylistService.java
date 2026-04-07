@@ -27,6 +27,7 @@ import com.music.music.playlist.repository.PlaylistRepository;
 import com.music.music.playlist.repository.PlaylistSongRepository;
 import com.music.music.playlist.repository.PlaylistSongVoteRepository;
 import com.music.music.playlist.repository.SongRepository;
+import com.music.music.review.repository.ReviewRepository;
 import com.music.music.user.entity.User;
 import com.music.music.user.repository.UserRepository;
 
@@ -45,6 +46,7 @@ public class PlaylistService {
     private final SongRepository songRepository;
     private final FileService fileService;
     private final UserRepository userRepository;
+    private final ReviewRepository reviewRepository;
 
     /*
      * =========================
@@ -284,7 +286,7 @@ public class PlaylistService {
     // 공동 플레이리스트 -> 내 플레이리스트로 추가
     public Long importCollabo(Long collaboPlaylistId, String email) {
         Playlist source = playlistRepository.findById(collaboPlaylistId)
-                .orElseThrow(() -> new IllegalArgumentException("플레이리스트를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("해당 플레이리스트는 곡 수 부족으로 자동 삭제되었습니다."));
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
@@ -345,11 +347,14 @@ public class PlaylistService {
             throw new IllegalArgumentException("플레이리스트를 찾을 수 없습니다.");
         }
 
+        // 리뷰의 playlist_id를 null로 처리 (리뷰는 삭제하지 않고 유지)
+        reviewRepository.detachFromPlaylist(id);
+
         // FK 의존 순서대로 삭제
         playlistSongVoteRepository.deleteByPlaylistId(id); // playlist_song_vote
         playlistLikeRepository.deleteByPlaylistId(id);     // playlist_like
         playlistImportRepository.deleteByImportedPlaylistId(id); // imported my-playlist link
         playlistImportRepository.deleteByPlaylistId(id);   // playlist_import
-        playlistRepository.deleteById(id);                 // playlist (cascade로 playlist_song, review 삭제)
+        playlistRepository.deleteById(id);                 // playlist (cascade로 playlist_song 삭제)
     }
 }

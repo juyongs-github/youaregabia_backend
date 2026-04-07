@@ -144,14 +144,14 @@ public class PlaylistController {
 
     // 공동 플레이리스트 → 내 플레이리스트로 가져오기 (투표순 상위 10곡)
     @PostMapping("/collabo/{id}/import")
-    public ResponseEntity<Long> importCollabo(
+    public ResponseEntity<?> importCollabo(
             @PathVariable("id") Long id,
             @AuthenticationPrincipal String email) {
         try {
             Long newPlaylistId = playlistService.importCollabo(id, email);
             return ResponseEntity.ok(newPlaylistId);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(409).body(e.getMessage());
         }
     }
 
